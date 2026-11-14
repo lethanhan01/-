@@ -1,0 +1,421 @@
+import { useMemo, useState } from 'react';
+import {
+  IconArrowRight,
+  IconClockCheck,
+  IconFilter,
+  IconMapPin,
+  IconRefresh,
+  IconSparkles,
+} from '@tabler/icons-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Chip,
+  Grid,
+  Group,
+  Select,
+  Stack,
+  Switch,
+  Text,
+  Title,
+  UnstyledButton,
+} from '@mantine/core';
+import { JobLeafletMap, MapJobItem } from '../components/Map/JobLeafletMap';
+import { TrustBadge } from '../components/TrustBadge/TrustBadge';
+import { ANCHOR_ZONES } from '../data/seedData';
+import {
+  computeJobScheduleMatch,
+  formatVnd,
+  haversineDistanceKm,
+  JOB_STATUS_META,
+} from '../domain/jobLogic';
+import { ShiftPeriod } from '../domain/types';
+import { useAppState } from '../state/AppStateContext';
+
+export function JobsMapPage() {
+  const [searchParams] = useSearchParams();
+  const highlightJobId = searchParams.get('highlightJobId');
+
+  const { state, derived, actions } = useAppState();
+  const [onlyMatchingSchedule, setOnlyMatchingSchedule] = useState(false);
+  const [radiusKm, setRadiusKm] = useState<string>('10');
+  const [minWage, setMinWage] = useState<string>('0');
+  const [minTrust, setMinTrust] = useState<string>('0');
+  const [selectedPeriods, setSelectedPeriods] = useState<ShiftPeriod[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(highlightJobId);
+
+  const anchorZone = useMemo(
+    () => ANCHOR_ZONES.find((z) => z.id === state.profile.anchorZoneId) ?? ANCHOR_ZONES[0],
+    [state.profile.anchorZoneId]
+  );
+
+  const companyMap = useMemo(
+    () => new Map(state.companies.map((c) => [c.id, c])),
+    [state.companies]
+  );
+
+  const filteredItems = useMemo(() => {
+    const radiusVal = Number(radiusKm);
+    const wageVal = Number(minWage);
+    const trustVal = Number(minTrust);
+
+    const results: (MapJobItem & {
+      matchingShiftCount: number;
+      totalShiftCount: number;
+    })[] = [];
+
+    for (const job of derived.canonicalJobs) {
+      const company = companyMap.get(job.companyId);
+      if (!company) {
+        continue;
+      }
+
+      const distanceKm = haversineDistanceKm(
+        anchorZone.lat,
+        anchorZone.lng,
+        company.lat,
+        company.lng
+      );
+
+      if (radiusVal > 0 && distanceKm > radiusVal) {
+        continue;
+      }
+      if (job.hourlyWageVnd < wageVal) {
+        continue;
+      }
+      if (company.trustScore < trustVal) {
+        continue;
+      }
+      if (
+        selectedPeriods.length > 0 &&
+        !job.shifts.some((s) => selectedPeriods.includes(s.period))
+      ) {
+        continue;
+      }
+
+      const scheduleMatch = computeJobScheduleMatch(job.shifts, state.busySchedule);
+      if (onlyMatchingSchedule && !scheduleMatch.isMatch) {
+        continue;
+      }
+
+      results.push({
+        job,
+        company,
+        distanceKm,
+        matchPercent: scheduleMatch.matchPercent,
+        matchingShiftCount: scheduleMatch.matchingCount,
+        totalShiftCount: scheduleMatch.totalCount,
+      });
+    }
+
+    results.sort((a, b) => {
+      if (b.matchPercent !== a.matchPercent) {
+        return b.matchPercent - a.matchPercent;
+      }
+      return a.distanceKm - b.distanceKm;
+    });
+
+    return results;
+  }, [
+    derived.canonicalJobs,
+    companyMap,
+    anchorZone,
+    radiusKm,
+    minWage,
+    minTrust,
+    selectedPeriods,
+    state.busySchedule,
+    onlyMatchingSchedule,
+  ]);
+
+  const activeItem =
+    filteredItems.find((item) => item.job.id === selectedJobId) ?? filteredItems[0] ?? null;
+
+  return (
+    <Stack gap="md">
+      <Group justify="space-between" align="flex-end" wrap="wrap">
+        <Stack gap={4}>
+          <Title order={2}>Bản đồ Việc làm Thêm (MH-01)</Title>
+          <Text size="sm" c="dimmed">
+            Khám phá tin tuyển dụng minh bạch quanh {anchorZone.label}, tự động khớp với lịch rảnh
+            từ hồ sơ cá nhân.
+          </Text>
+        </Stack>
+
+        <Button
+          variant="light"
+          size="xs"
+          leftSection={<IconRefresh size={15} />}
+          onClick={actions.simulateRealtimeTick}
+        >
+          Đồng bộ trạng thái thời gian thực
+        </Button>
+      </Group>
+
+      <Alert color="teal" variant="light" icon={<IconSparkles size={18} />}>
+        <Group justify="space-between" wrap="wrap" gap="xs">
+          <Text size="sm">
+            Đang hiển thị{' '}
+            <Text span fw={700} className="app-tabular">
+              {filteredItems.length}
+            </Text>{' '}
+            công việc phù hợp • Đã khử trùng lặp{' '}
+            <Text span fw={700} className="app-tabular">
+              {derived.dedupeStats.mergedDuplicatesCount}
+            </Text>{' '}
+            tin từ nhiều nguồn • Đã tự động ẩn{' '}
+            <Text span fw={700} className="app-tabular">
+              {derived.dedupeStats.expiredHiddenCount}
+            </Text>{' '}
+            tin hết hạn.
+          </Text>
+          <Badge color="brand" variant="outline">
+            Ưu tiên khớp TKB
+          </Badge>
+        </Group>
+      </Alert>
+
+      <Card p="md">
+        <Stack gap="sm">
+          <Group justify="space-between" wrap="wrap">
+            <Group gap="xs">
+              <IconFilter size={17} />
+              <Text size="sm" fw={600}>
+                Bộ lọc đa chiều & Khớp lịch rảnh
+              </Text>
+            </Group>
+            <Switch
+              label="Chỉ hiện việc khớp lịch rảnh"
+              checked={onlyMatchingSchedule}
+              onChange={(e) => setOnlyMatchingSchedule(e.currentTarget.checked)}
+              color="teal"
+            />
+          </Group>
+
+          <Grid gap="sm">
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <Select
+                label="Bán kính quanh khu vực"
+                value={radiusKm}
+                onChange={(v) => setRadiusKm(v ?? '0')}
+                data={[
+                  { value: '2', label: 'Trong vòng 2 km' },
+                  { value: '5', label: 'Trong vòng 5 km' },
+                  { value: '10', label: 'Trong vòng 10 km' },
+                  { value: '0', label: 'Toàn TP.HCM' },
+                ]}
+                allowDeselect={false}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <Select
+                label="Mức lương tối thiểu"
+                value={minWage}
+                onChange={(v) => setMinWage(v ?? '0')}
+                data={[
+                  { value: '0', label: 'Tất cả mức lương' },
+                  { value: '25000', label: 'Từ 25.000đ/giờ' },
+                  { value: '30000', label: 'Từ 30.000đ/giờ' },
+                  { value: '40000', label: 'Từ 40.000đ/giờ' },
+                ]}
+                allowDeselect={false}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <Select
+                label="Điểm uy tín cơ sở"
+                value={minTrust}
+                onChange={(v) => setMinTrust(v ?? '0')}
+                data={[
+                  { value: '0', label: 'Tất cả (bao gồm tin cảnh báo)' },
+                  { value: '3.5', label: 'Từ 3.5 ★ trở lên' },
+                  { value: '4.5', label: 'Từ 4.5 ★ (Uy tín cao)' },
+                ]}
+                allowDeselect={false}
+              />
+            </Grid.Col>
+          </Grid>
+
+          <Group gap="xs" align="center" wrap="wrap">
+            <Text size="xs" fw={600} c="dimmed">
+              Ca làm việc:
+            </Text>
+            <Chip.Group
+              multiple
+              value={selectedPeriods}
+              onChange={(vals) => setSelectedPeriods(vals as ShiftPeriod[])}
+            >
+              <Group gap="xs">
+                <Chip value="morning" size="xs">
+                  Ca Sáng
+                </Chip>
+                <Chip value="afternoon" size="xs">
+                  Ca Chiều
+                </Chip>
+                <Chip value="evening" size="xs">
+                  Ca Tối
+                </Chip>
+                <Chip value="weekend" size="xs">
+                  Cuối tuần
+                </Chip>
+              </Group>
+            </Chip.Group>
+          </Group>
+        </Stack>
+      </Card>
+
+      <Grid gap="md">
+        <Grid.Col span={{ base: 12, md: 7 }}>
+          <Stack gap="md">
+            <JobLeafletMap
+              center={anchorZone}
+              radiusKm={Number(radiusKm) > 0 ? Number(radiusKm) : null}
+              items={filteredItems}
+              selectedJobId={activeItem?.job.id ?? null}
+              onSelectJob={(jobId) => setSelectedJobId(jobId)}
+            />
+
+            {activeItem ? (
+              <Card p="md" bd="1.5px solid var(--mantine-color-brand-5)">
+                <Stack gap="xs">
+                  <Group justify="space-between" wrap="wrap">
+                    <Badge color={JOB_STATUS_META[activeItem.job.status].color}>
+                      {JOB_STATUS_META[activeItem.job.status].label}
+                    </Badge>
+                    <Group gap="xs">
+                      {activeItem.job.duplicateCount > 1 ? (
+                        <Badge color="brand" variant="outline">
+                          Gộp từ {activeItem.job.duplicateCount} nguồn
+                        </Badge>
+                      ) : null}
+                      <Badge color={activeItem.matchPercent > 0 ? 'teal' : 'gray'}>
+                        Khớp {activeItem.matchPercent}% lịch rảnh
+                      </Badge>
+                    </Group>
+                  </Group>
+
+                  <Title order={4}>{activeItem.job.title}</Title>
+                  <Text size="sm" fw={600} c="brand">
+                    {activeItem.company.name}
+                  </Text>
+                  <Group gap="md" wrap="wrap">
+                    <Text size="sm" fw={700} c="teal" className="app-tabular">
+                      {formatVnd(activeItem.job.hourlyWageVnd)}/giờ
+                    </Text>
+                    <Text size="xs" c="dimmed" className="app-tabular">
+                      Cách {activeItem.distanceKm.toFixed(1)} km • {activeItem.company.address}
+                    </Text>
+                  </Group>
+
+                  <TrustBadge company={activeItem.company} compact />
+
+                  <Group justify="flex-end" mt="xs">
+                    <Button
+                      component={Link}
+                      to={`/jobs/${activeItem.job.id}`}
+                      rightSection={<IconArrowRight size={16} />}
+                    >
+                      Xem chi tiết công việc & công ty
+                    </Button>
+                  </Group>
+                </Stack>
+              </Card>
+            ) : (
+              <Card p="lg">
+                <Text size="sm" c="dimmed" ta="center">
+                  Không có công việc nào khớp bộ lọc hiện tại. Hãy nới rộng bán kính hoặc tắt bớt
+                  điều kiện lọc.
+                </Text>
+              </Card>
+            )}
+          </Stack>
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12, md: 5 }}>
+          <Stack gap="sm">
+            <Group justify="space-between">
+              <Title order={4}>Danh sách việc làm ({filteredItems.length})</Title>
+              <Text size="xs" c="dimmed">
+                Sắp xếp theo độ khớp lịch rảnh
+              </Text>
+            </Group>
+
+            {filteredItems.map((item) => {
+              const isSelected = activeItem?.job.id === item.job.id;
+              return (
+                <Card
+                  key={item.job.id}
+                  p="sm"
+                  bd={
+                    isSelected
+                      ? '1.5px solid var(--mantine-color-brand-6)'
+                      : '1px solid var(--app-border-subtle)'
+                  }
+                >
+                  <Stack gap={6}>
+                    <Group justify="space-between" wrap="nowrap">
+                      <Badge size="xs" color={JOB_STATUS_META[item.job.status].color}>
+                        {JOB_STATUS_META[item.job.status].label}
+                      </Badge>
+                      <Badge
+                        size="xs"
+                        color={item.matchingShiftCount > 0 ? 'teal' : 'red'}
+                        leftSection={<IconClockCheck size={12} />}
+                      >
+                        {item.matchingShiftCount}/{item.totalShiftCount} ca khớp lịch
+                      </Badge>
+                    </Group>
+
+                    <UnstyledButton onClick={() => setSelectedJobId(item.job.id)} ta="left">
+                      <Text size="sm" fw={700}>
+                        {item.job.title}
+                      </Text>
+                    </UnstyledButton>
+
+                    <Group justify="space-between" wrap="wrap" gap="xs">
+                      <Text size="xs" c="dimmed">
+                        {item.company.name}
+                      </Text>
+                      <Text size="xs" fw={700} c="teal" className="app-tabular">
+                        {formatVnd(item.job.hourlyWageVnd)}/giờ
+                      </Text>
+                    </Group>
+
+                    <Group justify="space-between" align="center" wrap="wrap">
+                      <Group gap="xs">
+                        <Badge
+                          size="xs"
+                          variant="outline"
+                          color="gray"
+                          leftSection={<IconMapPin size={11} />}
+                        >
+                          {item.distanceKm.toFixed(1)} km
+                        </Badge>
+                        {item.job.duplicateCount > 1 ? (
+                          <Badge size="xs" color="brand" variant="light">
+                            Gộp {item.job.duplicateCount} nguồn
+                          </Badge>
+                        ) : null}
+                      </Group>
+                      <Button
+                        component={Link}
+                        to={`/jobs/${item.job.id}`}
+                        size="xs"
+                        variant={isSelected ? 'filled' : 'light'}
+                      >
+                        Chi tiết
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Card>
+              );
+            })}
+          </Stack>
+        </Grid.Col>
+      </Grid>
+    </Stack>
+  );
+}
