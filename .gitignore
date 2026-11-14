@@ -131,4 +131,5 @@ dist
 
 .DS_Store
 .vitest/
+.vercel
 client/.aider-desk/skills/*

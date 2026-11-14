@@ -4100,51 +4100,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mantine-vite-template@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "mantine-vite-template@workspace:."
-  dependencies:
-    "@mantine/core": "npm:9.8.0"
-    "@mantine/dropzone": "npm:^9.8.0"
-    "@mantine/form": "npm:^9.8.0"
-    "@mantine/hooks": "npm:9.8.0"
-    "@mantine/modals": "npm:^9.8.0"
-    "@mantine/notifications": "npm:^9.8.0"
-    "@storybook/addon-themes": "npm:^10.0.0"
-    "@storybook/react": "npm:^10.0.0"
-    "@storybook/react-vite": "npm:^10.0.0"
-    "@tabler/icons-react": "npm:^3.51.0"
-    "@testing-library/dom": "npm:^10.4.1"
-    "@testing-library/jest-dom": "npm:^7.0.0"
-    "@testing-library/react": "npm:^16.3.0"
-    "@testing-library/user-event": "npm:^14.6.1"
-    "@types/leaflet": "npm:^1.9.22"
-    "@types/node": "npm:^26.0.0"
-    "@types/react": "npm:^19.2.2"
-    "@types/react-dom": "npm:^19.2.1"
-    "@vitejs/plugin-react": "npm:^6.0.0"
-    identity-obj-proxy: "npm:^3.0.0"
-    jsdom: "npm:^31.0.0"
-    leaflet: "npm:^1.9.4"
-    oxc-config-mantine: "npm:^1.0.0"
-    postcss: "npm:^8.5.6"
-    postcss-preset-mantine: "npm:1.18.0"
-    postcss-simple-vars: "npm:^7.0.1"
-    prop-types: "npm:^15.8.1"
-    react: "npm:^19.2.0"
-    react-dom: "npm:^19.2.0"
-    react-router-dom: "npm:^7.9.4"
-    rollup-plugin-visualizer: "npm:^7.1.1"
-    storybook: "npm:^10.0.0"
-    stylelint: "npm:^18.0.0"
-    stylelint-config-standard: "npm:^41.0.0"
-    typescript: "npm:7.0.2"
-    vite: "catalog:"
-    vite-plus: "catalog:"
-    vitest: "catalog:"
-  languageName: unknown
-  linkType: soft
-
 "mdn-data@npm:2.27.1":
   version: 2.27.1
   resolution: "mdn-data@npm:2.27.1"
@@ -4753,6 +4708,51 @@ __metadata:
   checksum: 10c0/2b00189fbeb73a47422bed831b970502258a44dc53134c0db8e2d3114cec0766fea5346dbb61aff94978c6bf666e5243bc5bcb2279b680f130f8de98cd28ac18
   languageName: node
   linkType: hard
+
+"parttime-jobs-for-student-client@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "parttime-jobs-for-student-client@workspace:."
+  dependencies:
+    "@mantine/core": "npm:9.8.0"
+    "@mantine/dropzone": "npm:^9.8.0"
+    "@mantine/form": "npm:^9.8.0"
+    "@mantine/hooks": "npm:9.8.0"
+    "@mantine/modals": "npm:^9.8.0"
+    "@mantine/notifications": "npm:^9.8.0"
+    "@storybook/addon-themes": "npm:^10.0.0"
+    "@storybook/react": "npm:^10.0.0"
+    "@storybook/react-vite": "npm:^10.0.0"
+    "@tabler/icons-react": "npm:^3.51.0"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^7.0.0"
+    "@testing-library/react": "npm:^16.3.0"
+    "@testing-library/user-event": "npm:^14.6.1"
+    "@types/leaflet": "npm:^1.9.22"
+    "@types/node": "npm:^26.0.0"
+    "@types/react": "npm:^19.2.2"
+    "@types/react-dom": "npm:^19.2.1"
+    "@vitejs/plugin-react": "npm:^6.0.0"
+    identity-obj-proxy: "npm:^3.0.0"
+    jsdom: "npm:^31.0.0"
+    leaflet: "npm:^1.9.4"
+    oxc-config-mantine: "npm:^1.0.0"
+    postcss: "npm:^8.5.6"
+    postcss-preset-mantine: "npm:1.18.0"
+    postcss-simple-vars: "npm:^7.0.1"
+    prop-types: "npm:^15.8.1"
+    react: "npm:^19.2.0"
+    react-dom: "npm:^19.2.0"
+    react-router-dom: "npm:^7.9.4"
+    rollup-plugin-visualizer: "npm:^7.1.1"
+    storybook: "npm:^10.0.0"
+    stylelint: "npm:^18.0.0"
+    stylelint-config-standard: "npm:^41.0.0"
+    typescript: "npm:7.0.2"
+    vite: "catalog:"
+    vite-plus: "catalog:"
+    vitest: "catalog:"
+  languageName: unknown
+  linkType: soft
 
 "path-key@npm:^3.1.0":
   version: 3.1.1
