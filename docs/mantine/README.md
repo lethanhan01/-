@@ -45,7 +45,23 @@ Khi cần layout hoàn chỉnh (navigation, auth, dashboard, landing section), t
 3. **Chuẩn hóa CSS Module**: Đảm bảo mọi đơn vị font/spacing dùng `rem()`, `light-dark()`, `$mantine-breakpoint-*`, không hardcode string/CSS `px`.
 4. **Đồng bộ Theme**: Đưa các màu sắc, radius hoặc font lặp lại nhiều nơi vào `client/src/theme.ts`.
 
-## 3. Mục lục tài liệu trong dự án
+## 3. Hướng dẫn áp dụng Project Skills (`client/.agents/skills/`)
+
+Dự án có sẵn bộ skills tại `client/.agents/skills/` (và bản đồng bộ tại `client/.aider-desk/skills/`). Khi triển khai hoặc review code React/UI trong `client/`, Agent cần đọc đúng file `SKILL.md` tương ứng trước khi làm:
+
+| Nhu cầu / Tác vụ | Skill cần đọc (`client/.agents/skills/...`) | Cách áp dụng vào dự án Mantine Vite |
+|---|---|---|
+| Viết, refactor, tối ưu hiệu năng React (state, re-render, bundle, async) | [`vercel-react-best-practices`](../../client/.agents/skills/vercel-react-best-practices/SKILL.md) | Áp dụng các rule cho React/Vite SPA; **bỏ qua** các rule dành riêng cho Next.js App Router / RSC |
+| Thiết kế custom component tái sử dụng, compound components, tránh phình boolean props, React 19 | [`vercel-composition-patterns`](../../client/.agents/skills/vercel-composition-patterns/SKILL.md) | Áp dụng tư duy composition nhưng **dựng trên Mantine primitives** (`Box`, `UnstyledButton`, `createPolymorphicComponent`) |
+| Thêm animation chuyển trang / chuyển trạng thái UI thuần React | [`vercel-react-view-transitions`](../../client/.agents/skills/vercel-react-view-transitions/SKILL.md) | Kết hợp `<ViewTransition>` / `startViewTransition` với CSS Modules (`*.module.css`) |
+| Review UI/UX, accessibility, layout & interaction | [`web-design-guidelines`](../../client/.agents/skills/web-design-guidelines/SKILL.md) | Kết hợp kiểm tra cùng checklist của [01-strict-rules-and-styling.md](./01-strict-rules-and-styling.md) |
+| Review văn phong tài liệu kỹ thuật | [`writing-guidelines`](../../client/.agents/skills/writing-guidelines/SKILL.md) | Dùng khi viết hoặc rà soát tài liệu trong `docs/` |
+
+- **Nhóm chỉ dùng khi deploy Vercel**: `deploy-to-vercel`, `vercel-cli-with-tokens`, `vercel-optimize` — chỉ kích hoạt khi có tác vụ deploy/tối ưu trên Vercel.
+- **Không áp dụng**: `vercel-react-native-skills` (dự án này là web Vite + React, không phải React Native/Expo).
+- **Nguyên tắc ưu tiên bắt buộc**: Quy chuẩn Mantine trong [AGENTS.md](../../AGENTS.md) và [01-strict-rules-and-styling.md](./01-strict-rules-and-styling.md) luôn có độ ưu tiên cao hơn ví dụ minh họa trong skill. Nếu skill dùng raw HTML (`<div>`, `<button>`), Tailwind, hoặc API Next.js để minh họa, phải chuyển đổi hoàn toàn sang Mantine components + CSS Modules (`rem()`).
+
+## 4. Mục lục tài liệu trong dự án
 
 1. [01-strict-rules-and-styling.md](./01-strict-rules-and-styling.md) — Quy tắc bắt buộc (Mantine-first, custom từ primitives, cấm raw HTML/non-semantic, cấm hardcode `px`, cấm Tailwind/CSS-in-JS) & chuẩn styling.
 2. [02-setup-forms-hooks-guide.md](./02-setup-forms-hooks-guide.md) — Setup, CSS import order, Theme, hướng dẫn thực hành `@mantine/form`, `@mantine/hooks`, và bảng cài đặt package mở rộng.

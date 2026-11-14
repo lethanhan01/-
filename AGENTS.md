@@ -49,6 +49,22 @@ Never guess Mantine v9 APIs or copy deprecated v6/v7/v8 patterns. Always check:
   - `yarn vitest`
   - `yarn build` (or run all via `yarn test`)
 
-## 5. Project Documentation
+## 5. Project Skills (`client/.agents/skills/`)
 
-Read [docs/mantine/README.md](./docs/mantine/README.md) for the Vietnamese lookup map, strict rule examples, and setup/form/hook/testing patterns.
+When working on a matching task in `client/`, read the relevant `client/.agents/skills/<skill-name>/SKILL.md` first before implementing or reviewing:
+
+| Task / Trigger | Skill to Read (`client/.agents/skills/...`) | Scope & Adaptation Notes |
+|---|---|---|
+| Writing, refactoring, or optimizing React components, data fetching, or bundle size | `vercel-react-best-practices/SKILL.md` | Apply React/Vite SPA rules; skip Next.js App Router / Server Components (`RSC`) rules |
+| Designing reusable/compound components, fixing boolean-prop bloat, React 19 APIs | `vercel-composition-patterns/SKILL.md` | Combine with Mantine primitives (`Box`, `UnstyledButton`, `createPolymorphicComponent`) |
+| Adding route or UI enter/exit animations without third-party animation libs | `vercel-react-view-transitions/SKILL.md` | Apply `<ViewTransition>` / `startViewTransition` with CSS Modules |
+| UI/UX, accessibility, or design compliance review | `web-design-guidelines/SKILL.md` | Use for audits alongside Section 3 Mantine rules |
+| Reviewing documentation or UI prose | `writing-guidelines/SKILL.md` | Use when editing `docs/` or long-form UI copy |
+
+- **Deploy-only skills**: Use `deploy-to-vercel`, `vercel-cli-with-tokens`, and `vercel-optimize` only when explicitly deploying or auditing a Vercel deployment.
+- **Not applicable**: Ignore `vercel-react-native-skills` (`client/` is a Vite web app, not React Native/Expo).
+- **Precedence rule**: Section 3 (Strict Mantine-First UI Rules) always overrides generic code examples inside skills. Never copy raw HTML tags, Tailwind classes, or Next.js-only patterns from a skill; translate the React/composition pattern onto Mantine components and `*.module.css`.
+
+## 6. Project Documentation
+
+Read [docs/mantine/README.md](./docs/mantine/README.md) for the Vietnamese lookup map, strict rule examples, skill mapping, and setup/form/hook/testing patterns.
