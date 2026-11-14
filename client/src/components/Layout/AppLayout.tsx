@@ -18,10 +18,10 @@ import {
   Button,
   Group,
   NavLink,
+  Paper,
   Select,
   Stack,
   Text,
-  Title,
   Tooltip,
   UnstyledButton,
   useMantineColorScheme,
@@ -29,6 +29,7 @@ import {
 import { modals } from '@mantine/modals';
 import { ANCHOR_ZONES } from '../../data/seedData';
 import { useAppState } from '../../state/AppStateContext';
+import classes from './AppLayout.module.css';
 
 const NAV_ITEMS = [
   { label: 'Bản đồ việc làm', shortLabel: 'Bản đồ', to: '/', icon: IconMapPin },
@@ -81,11 +82,11 @@ export function AppLayout() {
               px="xs"
               leftSection={<IconShieldCheck size={22} />}
             >
-              <Title order={4} size="h5">
+              <Text fw={700} size="md">
                 PartTime Tin Cậy
-              </Title>
+              </Text>
             </Button>
-            <Badge color="teal" visibleFrom="md">
+            <Badge color="success" visibleFrom="md">
               Minh bạch cho Sinh viên
             </Badge>
           </Group>
@@ -163,7 +164,7 @@ export function AppLayout() {
                   leftSection={<Icon size={18} />}
                   rightSection={
                     item.to === '/messages' && derived.unreadMessagesCount > 0 ? (
-                      <Badge size="xs" color="red" variant="filled">
+                      <Badge size="xs" color="danger" variant="filled">
                         {derived.unreadMessagesCount}
                       </Badge>
                     ) : null
@@ -173,7 +174,7 @@ export function AppLayout() {
             })}
           </Stack>
 
-          <Box p="sm" bg="var(--app-bg-canvas)" bd="1px solid var(--app-border-subtle)" bdrs="md">
+          <Paper withBorder p="sm" radius="md" bg="var(--app-bg-subtle)">
             <Stack gap={4}>
               <Text size="xs" fw={600}>
                 {state.profile.fullName}
@@ -182,7 +183,7 @@ export function AppLayout() {
                 {state.profile.university}
               </Text>
               <Group gap="xs" mt={4}>
-                <Badge size="xs" color="teal">
+                <Badge size="xs" color="success">
                   {state.applications.length} đã ứng tuyển
                 </Badge>
                 <Badge size="xs" color="brand">
@@ -190,7 +191,7 @@ export function AppLayout() {
                 </Badge>
               </Group>
             </Stack>
-          </Box>
+          </Paper>
         </Stack>
       </AppShell.Navbar>
 
@@ -202,7 +203,7 @@ export function AppLayout() {
         component="nav"
         aria-label="Điều hướng chính"
         hiddenFrom="sm"
-        className="app-mobile-bottom-nav"
+        className={classes.mobileBottomNav}
       >
         <Group h="100%" grow gap={0}>
           {NAV_ITEMS.map((item) => {
@@ -214,16 +215,15 @@ export function AppLayout() {
                 component={Link}
                 to={item.to}
                 h="100%"
+                className={classes.mobileNavItem}
+                mod={{ active }}
                 aria-current={active ? 'page' : undefined}
               >
                 <Stack align="center" justify="center" gap={2} h="100%">
                   <Group gap={4} wrap="nowrap">
-                    <Icon
-                      size={20}
-                      color={active ? 'var(--mantine-color-brand-6)' : 'var(--app-text-muted)'}
-                    />
+                    <Icon size={20} />
                     {item.to === '/messages' && derived.unreadMessagesCount > 0 ? (
-                      <Badge size="xs" color="red" variant="filled" px={4}>
+                      <Badge size="xs" color="danger" variant="filled" px={4}>
                         {derived.unreadMessagesCount}
                       </Badge>
                     ) : null}

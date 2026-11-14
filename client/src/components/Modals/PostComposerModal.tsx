@@ -22,9 +22,11 @@ import {
 } from '@mantine/core';
 import { Dropzone, IMAGE_MIME_TYPE } from '@mantine/dropzone';
 import { useForm } from '@mantine/form';
+import { notifications } from '@mantine/notifications';
 import { ANCHOR_ZONES } from '../../data/seedData';
 import { ShiftPeriod } from '../../domain/types';
 import { useAppState } from '../../state/AppStateContext';
+import classes from './PostComposerModal.module.css';
 
 export type ComposerMode = 'review' | 'qa' | 'share';
 
@@ -66,6 +68,18 @@ interface ShareJobFormValues {
   description: string;
 }
 
+interface EvidenceImageItem {
+  id: string;
+  url: string;
+}
+
+let evidenceSeq = 0;
+
+function nextEvidenceId(): string {
+  evidenceSeq += 1;
+  return `ev-${Date.now()}-${evidenceSeq}`;
+}
+
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -75,23 +89,27 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function PostComposerModal({
-  opened,
-  onClose,
-  defaultMode = 'review',
-  prefillCompanyId,
-  onSharedJobCreated,
-}: PostComposerModalProps) {
-  const { state, actions } = useAppState();
-  const [mode, setMode] = useState<ComposerMode>(defaultMode);
-  const [evidenceImages, setEvidenceImages] = useState<string[]>([]);
+interface CompanyOption {
+  value: string;
+  label: string;
+}
 
-  const companyOptions = state.companies.map((c) => ({ value: c.id, label: c.name }));
+function ReviewComposerForm({
+  companyOptions,
+  defaultCompanyId,
+  onClose,
+}: {
+  companyOptions: CompanyOption[];
+  defaultCompanyId: string;
+  onClose: () => void;
+}) {
+  const { actions } = useAppState();
+  const [evidenceImages, setEvidenceImages] = useState<EvidenceImageItem[]>([]);
 
   const reviewForm = useForm<ReviewFormValues>({
     mode: 'uncontrolled',
     initialValues: {
-      companyId: prefillCompanyId || state.companies[0]?.id || '',
+      companyId: defaultCompanyId,
       title: '',
       content: '',
       salaryTransparency: 5,
@@ -106,11 +124,195 @@ export function PostComposerModal({
     },
   });
 
+  const handleDropEvidence = async (files: File[]) => {
+    try {
+      const selected = files.slice(0, 3 - evidenceImages.length);
+      const urls = await Promise.all(selected.map(readFileAsDataUrl));
+      const newItems = urls.filter(Boolean).map((url) => ({ id: nextEvidenceId(), url }));
+      setEvidenceImages((prev) => [...prev, ...newItems].slice(0, 3));
+    } catch {
+      notifications.show({
+        title: 'Không đọc được ảnh',
+        message: 'Vui lòng chọn tệp ảnh hợp lệ (PNG, JPG, WEBP).',
+        color: 'danger',
+      });
+    }
+  };
+
+  const handleSubmitReview = (values: ReviewFormValues) => {
+    actions.createCommunityPost({
+      type: 'review',
+      companyId: values.companyId,
+      title: values.title.trim(),
+      content: values.content.trim(),
+      verifiedWorker: values.verifiedWorker,
+      criteriaRatings: {
+        salaryTransparency: values.salaryTransparency,
+        environment: values.environment,
+        scheduleFlexibility: values.scheduleFlexibility,
+      },
+      evidenceImages: evidenceImages.map((img) => img.url),
+    });
+    reviewForm.reset();
+    setEvidenceImages([]);
+    onClose();
+  };
+
+  return (
+    <Box component="form" onSubmit={reviewForm.onSubmit(handleSubmitReview)} noValidate>
+      <Stack gap="sm">
+        <Select
+          withAsterisk
+          searchable
+          label="Cơ sở tuyển dụng được gắn thẻ"
+          data={companyOptions}
+          key={reviewForm.key('companyId')}
+          {...reviewForm.getInputProps('companyId')}
+        />
+
+        <TextInput
+          withAsterisk
+          label="Tiêu đề đánh giá"
+          placeholder="Ví dụ: Trải nghiệm 3 tháng làm ca tối tại..."
+          key={reviewForm.key('title')}
+          {...reviewForm.getInputProps('title')}
+        />
+
+        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+          <Stack gap={4}>
+            <Text size="xs" fw={600}>
+              Minh bạch lương
+            </Text>
+            <Rating
+              key={reviewForm.key('salaryTransparency')}
+              {...reviewForm.getInputProps('salaryTransparency')}
+            />
+          </Stack>
+          <Stack gap={4}>
+            <Text size="xs" fw={600}>
+              Môi trường làm việc
+            </Text>
+            <Rating
+              key={reviewForm.key('environment')}
+              {...reviewForm.getInputProps('environment')}
+            />
+          </Stack>
+          <Stack gap={4}>
+            <Text size="xs" fw={600}>
+              Linh hoạt lịch học
+            </Text>
+            <Rating
+              key={reviewForm.key('scheduleFlexibility')}
+              {...reviewForm.getInputProps('scheduleFlexibility')}
+            />
+          </Stack>
+        </SimpleGrid>
+
+        <Textarea
+          withAsterisk
+          label="Trải nghiệm thực tế (lương thực nhận, quản lý, hợp đồng)"
+          minRows={3}
+          key={reviewForm.key('content')}
+          {...reviewForm.getInputProps('content')}
+        />
+
+        <Checkbox
+          label="Tôi đã từng làm việc hoặc phỏng vấn trực tiếp tại cơ sở này"
+          key={reviewForm.key('verifiedWorker')}
+          {...reviewForm.getInputProps('verifiedWorker', { type: 'checkbox' })}
+        />
+
+        <Stack gap="xs">
+          <Group justify="space-between">
+            <Text size="xs" fw={600}>
+              Ảnh minh chứng (tùy chọn, tối đa 3 ảnh)
+            </Text>
+            <Badge size="xs" color="neutral">
+              {evidenceImages.length}/3 ảnh
+            </Badge>
+          </Group>
+          <Dropzone
+            onDrop={(files) => {
+              void handleDropEvidence(files);
+            }}
+            accept={IMAGE_MIME_TYPE}
+            maxSize={5 * 1024 ** 2}
+            disabled={evidenceImages.length >= 3}
+          >
+            <Group justify="center" gap="sm" mih={64} className={classes.dropzoneInner}>
+              <Dropzone.Accept>
+                <IconUpload size={22} />
+              </Dropzone.Accept>
+              <Dropzone.Reject>
+                <IconX size={22} />
+              </Dropzone.Reject>
+              <Dropzone.Idle>
+                <IconPhoto size={22} />
+              </Dropzone.Idle>
+              <Text size="xs" c="dimmed">
+                Kéo thả ảnh hợp đồng, bảng lương hoặc nơi làm việc vào đây
+              </Text>
+            </Group>
+          </Dropzone>
+
+          {evidenceImages.length > 0 ? (
+            <SimpleGrid cols={3} spacing="xs">
+              {evidenceImages.map((img, idx) => (
+                <Box key={img.id} pos="relative">
+                  <Image
+                    src={img.url}
+                    h={72}
+                    radius="sm"
+                    fit="cover"
+                    alt={`Minh chứng ${idx + 1}`}
+                  />
+                  <ActionIcon
+                    size="xs"
+                    color="danger"
+                    variant="filled"
+                    pos="absolute"
+                    top={4}
+                    right={4}
+                    aria-label={`Xóa ảnh minh chứng ${idx + 1}`}
+                    onClick={() =>
+                      setEvidenceImages((prev) => prev.filter((item) => item.id !== img.id))
+                    }
+                  >
+                    <IconTrash size={12} />
+                  </ActionIcon>
+                </Box>
+              ))}
+            </SimpleGrid>
+          ) : null}
+        </Stack>
+
+        <Group justify="flex-end" mt="xs">
+          <Button variant="default" onClick={onClose}>
+            Đóng
+          </Button>
+          <Button type="submit">Đăng đánh giá (+10đ uy tín)</Button>
+        </Group>
+      </Stack>
+    </Box>
+  );
+}
+
+function QaComposerForm({
+  companyOptions,
+  defaultCompanyId,
+  onClose,
+}: {
+  companyOptions: CompanyOption[];
+  defaultCompanyId: string;
+  onClose: () => void;
+}) {
+  const { actions } = useAppState();
+
   const qaForm = useForm<QaFormValues>({
     mode: 'uncontrolled',
     initialValues: {
       subType: 'question',
-      companyId: prefillCompanyId || '',
+      companyId: defaultCompanyId,
       title: '',
       content: '',
     },
@@ -120,10 +322,81 @@ export function PostComposerModal({
     },
   });
 
+  const handleSubmitQa = (values: QaFormValues) => {
+    actions.createCommunityPost({
+      type: values.subType,
+      companyId: values.companyId || undefined,
+      title: values.title.trim(),
+      content: values.content.trim(),
+    });
+    qaForm.reset();
+    onClose();
+  };
+
+  return (
+    <Box component="form" onSubmit={qaForm.onSubmit(handleSubmitQa)} noValidate>
+      <Stack gap="sm">
+        <SegmentedControl
+          value={qaForm.getValues().subType}
+          onChange={(v) => qaForm.setFieldValue('subType', v as 'question' | 'warning')}
+          data={[
+            { value: 'question', label: 'Đặt câu hỏi kinh nghiệm' },
+            { value: 'warning', label: 'Cảnh báo lừa đảo' },
+          ]}
+        />
+        <Select
+          clearable
+          searchable
+          label="Gắn thẻ công ty / cơ sở (tùy chọn)"
+          placeholder="Chọn nếu liên quan tới một cơ sở cụ thể"
+          data={companyOptions}
+          key={qaForm.key('companyId')}
+          {...qaForm.getInputProps('companyId')}
+        />
+        <TextInput
+          withAsterisk
+          label="Tiêu đề"
+          placeholder="Ví dụ: Ca tối ở khu ĐHQG về KTX có an toàn không?"
+          key={qaForm.key('title')}
+          {...qaForm.getInputProps('title')}
+        />
+        <Textarea
+          withAsterisk
+          label="Nội dung chi tiết"
+          minRows={4}
+          key={qaForm.key('content')}
+          {...qaForm.getInputProps('content')}
+        />
+        <Group justify="flex-end" mt="xs">
+          <Button variant="default" onClick={onClose}>
+            Đóng
+          </Button>
+          <Button type="submit" color="brand">
+            Đăng lên bảng tin
+          </Button>
+        </Group>
+      </Stack>
+    </Box>
+  );
+}
+
+function ShareJobComposerForm({
+  companyOptions,
+  defaultCompanyId,
+  onClose,
+  onSharedJobCreated,
+}: {
+  companyOptions: CompanyOption[];
+  defaultCompanyId: string;
+  onClose: () => void;
+  onSharedJobCreated?: (jobId: string) => void;
+}) {
+  const { state, actions } = useAppState();
+
   const shareForm = useForm<ShareJobFormValues>({
     mode: 'uncontrolled',
     initialValues: {
-      companyId: prefillCompanyId || '',
+      companyId: defaultCompanyId,
       newCompanyName: '',
       zoneId: state.profile.anchorZoneId,
       address: '',
@@ -147,53 +420,6 @@ export function PostComposerModal({
       description: (v) => (v.trim().length < 10 ? 'Mô tả ngắn tối thiểu 10 ký tự' : null),
     },
   });
-
-  useEffect(() => {
-    if (opened) {
-      setMode(defaultMode);
-      if (prefillCompanyId) {
-        reviewForm.setFieldValue('companyId', prefillCompanyId);
-        qaForm.setFieldValue('companyId', prefillCompanyId);
-        shareForm.setFieldValue('companyId', prefillCompanyId);
-      }
-    }
-  }, [opened, defaultMode, prefillCompanyId]);
-
-  const handleDropEvidence = async (files: File[]) => {
-    const selected = files.slice(0, 3 - evidenceImages.length);
-    const urls = await Promise.all(selected.map(readFileAsDataUrl));
-    setEvidenceImages((prev) => [...prev, ...urls].slice(0, 3));
-  };
-
-  const handleSubmitReview = (values: ReviewFormValues) => {
-    actions.createCommunityPost({
-      type: 'review',
-      companyId: values.companyId,
-      title: values.title.trim(),
-      content: values.content.trim(),
-      verifiedWorker: values.verifiedWorker,
-      criteriaRatings: {
-        salaryTransparency: values.salaryTransparency,
-        environment: values.environment,
-        scheduleFlexibility: values.scheduleFlexibility,
-      },
-      evidenceImages,
-    });
-    reviewForm.reset();
-    setEvidenceImages([]);
-    onClose();
-  };
-
-  const handleSubmitQa = (values: QaFormValues) => {
-    actions.createCommunityPost({
-      type: values.subType,
-      companyId: values.companyId || undefined,
-      title: values.title.trim(),
-      content: values.content.trim(),
-    });
-    qaForm.reset();
-    onClose();
-  };
 
   const handleSubmitShare = (values: ShareJobFormValues) => {
     const existingCompany = state.companies.find((c) => c.id === values.companyId);
@@ -220,6 +446,122 @@ export function PostComposerModal({
   };
 
   return (
+    <Box component="form" onSubmit={shareForm.onSubmit(handleSubmitShare)} noValidate>
+      <Stack gap="sm">
+        <Text size="xs" c="dimmed">
+          Tin tuyển dụng uy tín bạn chia sẻ sẽ đi qua bộ khử trùng lặp và xuất hiện ngay dưới dạng
+          ghim mới trên Bản đồ MH-01.
+        </Text>
+        <Select
+          clearable
+          searchable
+          label="Chọn cơ sở có sẵn (hoặc bỏ trống để nhập cơ sở mới)"
+          placeholder="Tìm trong danh sách cơ sở..."
+          data={companyOptions}
+          key={shareForm.key('companyId')}
+          {...shareForm.getInputProps('companyId')}
+        />
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+          <TextInput
+            label="Tên cơ sở mới (nếu chưa có)"
+            placeholder="Ví dụ: Phê La Làng ĐHQG"
+            key={shareForm.key('newCompanyName')}
+            {...shareForm.getInputProps('newCompanyName')}
+          />
+          <Select
+            label="Khu vực bản đồ"
+            data={ANCHOR_ZONES.map((z) => ({ value: z.id, label: z.label }))}
+            key={shareForm.key('zoneId')}
+            {...shareForm.getInputProps('zoneId')}
+          />
+        </SimpleGrid>
+        <TextInput
+          label="Địa chỉ cụ thể"
+          placeholder="Ví dụ: 18 Hàn Thuyên, Linh Trung, Thủ Đức"
+          key={shareForm.key('address')}
+          {...shareForm.getInputProps('address')}
+        />
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+          <TextInput
+            withAsterisk
+            label="Vị trí tuyển dụng"
+            placeholder="Ví dụ: Nhân viên phục vụ ca tối"
+            key={shareForm.key('title')}
+            {...shareForm.getInputProps('title')}
+          />
+          <NumberInput
+            withAsterisk
+            label="Mức lương / giờ (VNĐ)"
+            step={1000}
+            min={15000}
+            key={shareForm.key('hourlyWageVnd')}
+            {...shareForm.getInputProps('hourlyWageVnd')}
+          />
+        </SimpleGrid>
+        <MultiSelect
+          withAsterisk
+          label="Khung ca làm tuyển dụng"
+          data={[
+            { value: 'morning', label: 'Ca Sáng (08:00 - 12:00)' },
+            { value: 'afternoon', label: 'Ca Chiều (13:30 - 17:30)' },
+            { value: 'evening', label: 'Ca Tối (18:00 - 22:00)' },
+            { value: 'weekend', label: 'Ca Cuối tuần (T7 - CN)' },
+          ]}
+          key={shareForm.key('shiftPeriods')}
+          {...shareForm.getInputProps('shiftPeriods')}
+        />
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+          <TextInput
+            label="Chu kỳ trả lương"
+            key={shareForm.key('payCycle')}
+            {...shareForm.getInputProps('payCycle')}
+          />
+          <TextInput
+            label="Nguồn xác thực"
+            key={shareForm.key('sourceName')}
+            {...shareForm.getInputProps('sourceName')}
+          />
+        </SimpleGrid>
+        <Textarea
+          withAsterisk
+          label="Mô tả công việc & điều kiện minh bạch"
+          minRows={3}
+          key={shareForm.key('description')}
+          {...shareForm.getInputProps('description')}
+        />
+        <Group justify="flex-end" mt="xs">
+          <Button variant="default" onClick={onClose}>
+            Đóng
+          </Button>
+          <Button type="submit" color="success">
+            Chia sẻ lên Bản đồ (+15đ uy tín)
+          </Button>
+        </Group>
+      </Stack>
+    </Box>
+  );
+}
+
+export function PostComposerModal({
+  opened,
+  onClose,
+  defaultMode = 'review',
+  prefillCompanyId,
+  onSharedJobCreated,
+}: PostComposerModalProps) {
+  const { state } = useAppState();
+  const [mode, setMode] = useState<ComposerMode>(defaultMode);
+
+  useEffect(() => {
+    if (opened) {
+      setMode(defaultMode);
+    }
+  }, [opened, defaultMode]);
+
+  const companyOptions = state.companies.map((c) => ({ value: c.id, label: c.name }));
+  const prefillKey = prefillCompanyId || 'none';
+
+  return (
     <Modal opened={opened} onClose={onClose} size="lg" title="Đăng bài & Chia sẻ Cộng đồng (CS-02)">
       <Stack gap="md">
         <SegmentedControl
@@ -234,281 +576,31 @@ export function PostComposerModal({
         />
 
         {mode === 'review' ? (
-          <Box component="form" onSubmit={reviewForm.onSubmit(handleSubmitReview)} noValidate>
-            <Stack gap="sm">
-              <Select
-                withAsterisk
-                searchable
-                label="Cơ sở tuyển dụng được gắn thẻ"
-                data={companyOptions}
-                key={reviewForm.key('companyId')}
-                {...reviewForm.getInputProps('companyId')}
-              />
-
-              <TextInput
-                withAsterisk
-                label="Tiêu đề đánh giá"
-                placeholder="Ví dụ: Trải nghiệm 3 tháng làm ca tối tại..."
-                key={reviewForm.key('title')}
-                {...reviewForm.getInputProps('title')}
-              />
-
-              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
-                <Stack gap={4}>
-                  <Text size="xs" fw={600}>
-                    Minh bạch lương
-                  </Text>
-                  <Rating
-                    key={reviewForm.key('salaryTransparency')}
-                    {...reviewForm.getInputProps('salaryTransparency')}
-                  />
-                </Stack>
-                <Stack gap={4}>
-                  <Text size="xs" fw={600}>
-                    Môi trường làm việc
-                  </Text>
-                  <Rating
-                    key={reviewForm.key('environment')}
-                    {...reviewForm.getInputProps('environment')}
-                  />
-                </Stack>
-                <Stack gap={4}>
-                  <Text size="xs" fw={600}>
-                    Linh hoạt lịch học
-                  </Text>
-                  <Rating
-                    key={reviewForm.key('scheduleFlexibility')}
-                    {...reviewForm.getInputProps('scheduleFlexibility')}
-                  />
-                </Stack>
-              </SimpleGrid>
-
-              <Textarea
-                withAsterisk
-                label="Trải nghiệm thực tế (lương thực nhận, quản lý, hợp đồng)"
-                minRows={3}
-                key={reviewForm.key('content')}
-                {...reviewForm.getInputProps('content')}
-              />
-
-              <Checkbox
-                label="Tôi đã từng làm việc hoặc phỏng vấn trực tiếp tại cơ sở này"
-                key={reviewForm.key('verifiedWorker')}
-                {...reviewForm.getInputProps('verifiedWorker', { type: 'checkbox' })}
-              />
-
-              <Stack gap="xs">
-                <Group justify="space-between">
-                  <Text size="xs" fw={600}>
-                    Ảnh minh chứng (tùy chọn, tối đa 3 ảnh)
-                  </Text>
-                  <Badge size="xs" color="gray">
-                    {evidenceImages.length}/3 ảnh
-                  </Badge>
-                </Group>
-                <Dropzone
-                  onDrop={handleDropEvidence}
-                  accept={IMAGE_MIME_TYPE}
-                  maxSize={5 * 1024 ** 2}
-                  disabled={evidenceImages.length >= 3}
-                >
-                  <Group justify="center" gap="sm" mih={64} style={{ pointerEvents: 'none' }}>
-                    <Dropzone.Accept>
-                      <IconUpload size={22} />
-                    </Dropzone.Accept>
-                    <Dropzone.Reject>
-                      <IconX size={22} />
-                    </Dropzone.Reject>
-                    <Dropzone.Idle>
-                      <IconPhoto size={22} />
-                    </Dropzone.Idle>
-                    <Text size="xs" c="dimmed">
-                      Kéo thả ảnh hợp đồng, bảng lương hoặc nơi làm việc vào đây
-                    </Text>
-                  </Group>
-                </Dropzone>
-
-                {evidenceImages.length > 0 ? (
-                  <SimpleGrid cols={3} spacing="xs">
-                    {evidenceImages.map((src, idx) => (
-                      <Box key={src.slice(0, 32) + idx} pos="relative">
-                        <Image
-                          src={src}
-                          h={72}
-                          radius="sm"
-                          fit="cover"
-                          alt={`Minh chứng ${idx + 1}`}
-                        />
-                        <ActionIcon
-                          size="xs"
-                          color="red"
-                          variant="filled"
-                          pos="absolute"
-                          top={4}
-                          right={4}
-                          aria-label={`Xóa ảnh minh chứng ${idx + 1}`}
-                          onClick={() =>
-                            setEvidenceImages((prev) => prev.filter((_, i) => i !== idx))
-                          }
-                        >
-                          <IconTrash size={12} />
-                        </ActionIcon>
-                      </Box>
-                    ))}
-                  </SimpleGrid>
-                ) : null}
-              </Stack>
-
-              <Group justify="flex-end" mt="xs">
-                <Button variant="default" onClick={onClose}>
-                  Đóng
-                </Button>
-                <Button type="submit">Đăng đánh giá (+10đ uy tín)</Button>
-              </Group>
-            </Stack>
-          </Box>
+          <ReviewComposerForm
+            key={`review-${prefillKey}`}
+            companyOptions={companyOptions}
+            defaultCompanyId={prefillCompanyId || state.companies[0]?.id || ''}
+            onClose={onClose}
+          />
         ) : null}
 
         {mode === 'qa' ? (
-          <Box component="form" onSubmit={qaForm.onSubmit(handleSubmitQa)} noValidate>
-            <Stack gap="sm">
-              <SegmentedControl
-                value={qaForm.getValues().subType}
-                onChange={(v) => qaForm.setFieldValue('subType', v as 'question' | 'warning')}
-                data={[
-                  { value: 'question', label: 'Đặt câu hỏi kinh nghiệm' },
-                  { value: 'warning', label: 'Cảnh báo lừa đảo' },
-                ]}
-              />
-              <Select
-                clearable
-                searchable
-                label="Gắn thẻ công ty / cơ sở (tùy chọn)"
-                placeholder="Chọn nếu liên quan tới một cơ sở cụ thể"
-                data={companyOptions}
-                key={qaForm.key('companyId')}
-                {...qaForm.getInputProps('companyId')}
-              />
-              <TextInput
-                withAsterisk
-                label="Tiêu đề"
-                placeholder="Ví dụ: Ca tối ở khu ĐHQG về KTX có an toàn không?"
-                key={qaForm.key('title')}
-                {...qaForm.getInputProps('title')}
-              />
-              <Textarea
-                withAsterisk
-                label="Nội dung chi tiết"
-                minRows={4}
-                key={qaForm.key('content')}
-                {...qaForm.getInputProps('content')}
-              />
-              <Group justify="flex-end" mt="xs">
-                <Button variant="default" onClick={onClose}>
-                  Đóng
-                </Button>
-                <Button type="submit" color="brand">
-                  Đăng lên bảng tin
-                </Button>
-              </Group>
-            </Stack>
-          </Box>
+          <QaComposerForm
+            key={`qa-${prefillKey}`}
+            companyOptions={companyOptions}
+            defaultCompanyId={prefillCompanyId || ''}
+            onClose={onClose}
+          />
         ) : null}
 
         {mode === 'share' ? (
-          <Box component="form" onSubmit={shareForm.onSubmit(handleSubmitShare)} noValidate>
-            <Stack gap="sm">
-              <Text size="xs" c="dimmed">
-                Tin tuyển dụng uy tín bạn chia sẻ sẽ đi qua bộ khử trùng lặp và xuất hiện ngay dưới
-                dạng ghim mới trên Bản đồ MH-01.
-              </Text>
-              <Select
-                clearable
-                searchable
-                label="Chọn cơ sở có sẵn (hoặc bỏ trống để nhập cơ sở mới)"
-                placeholder="Tìm trong danh sách cơ sở..."
-                data={companyOptions}
-                key={shareForm.key('companyId')}
-                {...shareForm.getInputProps('companyId')}
-              />
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                <TextInput
-                  label="Tên cơ sở mới (nếu chưa có)"
-                  placeholder="Ví dụ: Phê La Làng ĐHQG"
-                  key={shareForm.key('newCompanyName')}
-                  {...shareForm.getInputProps('newCompanyName')}
-                />
-                <Select
-                  label="Khu vực bản đồ"
-                  data={ANCHOR_ZONES.map((z) => ({ value: z.id, label: z.label }))}
-                  key={shareForm.key('zoneId')}
-                  {...shareForm.getInputProps('zoneId')}
-                />
-              </SimpleGrid>
-              <TextInput
-                label="Địa chỉ cụ thể"
-                placeholder="Ví dụ: 18 Hàn Thuyên, Linh Trung, Thủ Đức"
-                key={shareForm.key('address')}
-                {...shareForm.getInputProps('address')}
-              />
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                <TextInput
-                  withAsterisk
-                  label="Vị trí tuyển dụng"
-                  placeholder="Ví dụ: Nhân viên phục vụ ca tối"
-                  key={shareForm.key('title')}
-                  {...shareForm.getInputProps('title')}
-                />
-                <NumberInput
-                  withAsterisk
-                  label="Mức lương / giờ (VNĐ)"
-                  step={1000}
-                  min={15000}
-                  key={shareForm.key('hourlyWageVnd')}
-                  {...shareForm.getInputProps('hourlyWageVnd')}
-                />
-              </SimpleGrid>
-              <MultiSelect
-                withAsterisk
-                label="Khung ca làm tuyển dụng"
-                data={[
-                  { value: 'morning', label: 'Ca Sáng (08:00 - 12:00)' },
-                  { value: 'afternoon', label: 'Ca Chiều (13:30 - 17:30)' },
-                  { value: 'evening', label: 'Ca Tối (18:00 - 22:00)' },
-                  { value: 'weekend', label: 'Ca Cuối tuần (T7 - CN)' },
-                ]}
-                key={shareForm.key('shiftPeriods')}
-                {...shareForm.getInputProps('shiftPeriods')}
-              />
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                <TextInput
-                  label="Chu kỳ trả lương"
-                  key={shareForm.key('payCycle')}
-                  {...shareForm.getInputProps('payCycle')}
-                />
-                <TextInput
-                  label="Nguồn xác thực"
-                  key={shareForm.key('sourceName')}
-                  {...shareForm.getInputProps('sourceName')}
-                />
-              </SimpleGrid>
-              <Textarea
-                withAsterisk
-                label="Mô tả công việc & điều kiện minh bạch"
-                minRows={3}
-                key={shareForm.key('description')}
-                {...shareForm.getInputProps('description')}
-              />
-              <Group justify="flex-end" mt="xs">
-                <Button variant="default" onClick={onClose}>
-                  Đóng
-                </Button>
-                <Button type="submit" color="teal">
-                  Chia sẻ lên Bản đồ (+15đ uy tín)
-                </Button>
-              </Group>
-            </Stack>
-          </Box>
+          <ShareJobComposerForm
+            key={`share-${prefillKey}`}
+            companyOptions={companyOptions}
+            defaultCompanyId={prefillCompanyId || ''}
+            onClose={onClose}
+            onSharedJobCreated={onSharedJobCreated}
+          />
         ) : null}
       </Stack>
     </Modal>

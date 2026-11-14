@@ -1,0 +1,20 @@
+.selectableCard {
+  transition: border-color 150ms ease;
+
+  &[data-selected] {
+    border-color: var(--mantine-primary-color-filled);
+  }
+}
+
+.titleButton {
+  border-radius: var(--mantine-radius-xs);
+
+  &:focus-visible {
+    outline: rem(2px) solid var(--mantine-primary-color-filled);
+    outline-offset: rem(2px);
+  }
+}
+
+.detailCard {
+  border-color: var(--mantine-primary-color-filled);
+}

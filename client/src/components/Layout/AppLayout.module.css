@@ -1,0 +1,18 @@
+.mobileBottomNav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 200;
+  height: var(--app-bottom-nav-h);
+  background-color: var(--mantine-color-body);
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.mobileNavItem {
+  color: var(--mantine-color-dimmed);
+
+  &[data-active] {
+    color: var(--mantine-primary-color-filled);
+  }
+}

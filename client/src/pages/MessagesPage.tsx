@@ -4,12 +4,12 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   Avatar,
   Badge,
-  Box,
   Button,
   Card,
   Divider,
   Grid,
   Group,
+  Paper,
   ScrollArea,
   SegmentedControl,
   Stack,
@@ -18,7 +18,100 @@ import {
   Title,
   UnstyledButton,
 } from '@mantine/core';
+import { ChatMessage, ChatThread } from '../domain/types';
 import { useAppState } from '../state/AppStateContext';
+import classes from './MessagesPage.module.css';
+
+function ThreadListItem({
+  thread,
+  isActive,
+  onSelect,
+}: {
+  thread: ChatThread;
+  isActive: boolean;
+  onSelect: () => void;
+}) {
+  const lastMsg = thread.messages[thread.messages.length - 1];
+  return (
+    <UnstyledButton
+      onClick={onSelect}
+      w="100%"
+      className={classes.threadButton}
+      mod={{ active: isActive }}
+      aria-current={isActive ? 'true' : undefined}
+    >
+      <Paper withBorder p="xs" radius="md" className={classes.threadCard}>
+        <Group justify="space-between" wrap="nowrap">
+          <Group gap="xs" wrap="nowrap">
+            <Avatar size="sm" radius="xl" color="brand">
+              {thread.peerName.slice(0, 1)}
+            </Avatar>
+            <Stack gap={0}>
+              <Text size="sm" fw={700} lineClamp={1}>
+                {thread.peerName}
+              </Text>
+              <Text size="xs" c="dimmed" lineClamp={1}>
+                {thread.peerRoleLabel}
+              </Text>
+            </Stack>
+          </Group>
+          {thread.unreadCount > 0 ? (
+            <Badge size="xs" color="danger" variant="filled">
+              {thread.unreadCount}
+            </Badge>
+          ) : null}
+        </Group>
+        <Text size="xs" c="dimmed" lineClamp={1} mt={4}>
+          {lastMsg ? lastMsg.text : 'Bắt đầu cuộc trò chuyện mới...'}
+        </Text>
+      </Paper>
+    </UnstyledButton>
+  );
+}
+
+function MessageBubble({ msg }: { msg: ChatMessage }) {
+  const isMe = msg.sender === 'me';
+  return (
+    <Group justify={isMe ? 'flex-end' : 'flex-start'}>
+      <Paper
+        withBorder={!isMe}
+        maw={{ base: '88%', sm: '75%' }}
+        p="sm"
+        radius="md"
+        className={classes.bubble}
+        mod={{ me: isMe }}
+      >
+        <Stack gap="xs">
+          {msg.text.trim() ? <Text size="sm">{msg.text}</Text> : null}
+          {msg.profileCard ? (
+            <Card p="xs" className={classes.profileCard}>
+              <Stack gap={4}>
+                <Group justify="space-between">
+                  <Text size="xs" fw={700}>
+                    Thẻ hồ sơ: {msg.profileCard.fullName}
+                  </Text>
+                  <Badge size="xs" color="success">
+                    {msg.profileCard.yearLabel}
+                  </Badge>
+                </Group>
+                <Text size="xs" c="dimmed">
+                  {msg.profileCard.university} • {msg.profileCard.major}
+                </Text>
+                <Group gap={4} wrap="wrap">
+                  {msg.profileCard.skills.map((s) => (
+                    <Badge key={s} size="xs" color="brand">
+                      {s}
+                    </Badge>
+                  ))}
+                </Group>
+              </Stack>
+            </Card>
+          ) : null}
+        </Stack>
+      </Paper>
+    </Group>
+  );
+}
 
 export function MessagesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -73,7 +166,7 @@ export function MessagesPage() {
     if (activeThread && activeThread.unreadCount > 0) {
       actions.markThreadRead(activeThread.id);
     }
-  }, [activeThread?.id]);
+  }, [activeThread?.id, activeThread?.unreadCount, actions]);
 
   const contextCompany = activeThread?.contextCompanyId
     ? companyMap.get(activeThread.contextCompanyId)
@@ -105,7 +198,9 @@ export function MessagesPage() {
   return (
     <Stack gap="md">
       <Stack gap={2}>
-        <Title order={2}>Nhắn tin Cộng đồng giữa Sinh viên (MH-05)</Title>
+        <Title order={1} size="h2">
+          Nhắn tin Cộng đồng giữa Sinh viên (MH-05)
+        </Title>
         <Text size="sm" c="dimmed">
           Hỏi trực tiếp người đã từng làm việc về môi trường, lương thực nhận hoặc gửi nhanh thẻ hồ
           sơ kết nối đi làm cùng.
@@ -134,54 +229,14 @@ export function MessagesPage() {
                     Không có hội thoại nào khớp bộ lọc.
                   </Text>
                 ) : (
-                  visibleThreads.map((thread) => {
-                    const lastMsg = thread.messages[thread.messages.length - 1];
-                    const isActive = activeThread?.id === thread.id;
-                    return (
-                      <UnstyledButton
-                        key={thread.id}
-                        onClick={() => handleSelectThread(thread.id)}
-                        w="100%"
-                      >
-                        <Box
-                          p="xs"
-                          bdrs="md"
-                          bg={
-                            isActive ? 'var(--mantine-color-brand-light)' : 'var(--app-bg-canvas)'
-                          }
-                          bd={
-                            isActive
-                              ? '1px solid var(--mantine-color-brand-5)'
-                              : '1px solid var(--app-border-subtle)'
-                          }
-                        >
-                          <Group justify="space-between" wrap="nowrap">
-                            <Group gap="xs" wrap="nowrap">
-                              <Avatar size="sm" radius="xl" color="brand">
-                                {thread.peerName.slice(0, 1)}
-                              </Avatar>
-                              <Stack gap={0}>
-                                <Text size="sm" fw={700} lineClamp={1}>
-                                  {thread.peerName}
-                                </Text>
-                                <Text size="xs" c="dimmed" lineClamp={1}>
-                                  {thread.peerRoleLabel}
-                                </Text>
-                              </Stack>
-                            </Group>
-                            {thread.unreadCount > 0 ? (
-                              <Badge size="xs" color="red" variant="filled">
-                                {thread.unreadCount}
-                              </Badge>
-                            ) : null}
-                          </Group>
-                          <Text size="xs" c="dimmed" lineClamp={1} mt={4}>
-                            {lastMsg ? lastMsg.text : 'Bắt đầu cuộc trò chuyện mới...'}
-                          </Text>
-                        </Box>
-                      </UnstyledButton>
-                    );
-                  })
+                  visibleThreads.map((thread) => (
+                    <ThreadListItem
+                      key={thread.id}
+                      thread={thread}
+                      isActive={activeThread?.id === thread.id}
+                      onSelect={() => handleSelectThread(thread.id)}
+                    />
+                  ))
                 )}
               </Stack>
             </Stack>
@@ -201,7 +256,11 @@ export function MessagesPage() {
                       <Group gap="xs">
                         <Text fw={700}>{activeThread.peerName}</Text>
                         {activeThread.peerHasReviewed ? (
-                          <Badge size="xs" color="teal" leftSection={<IconShieldCheck size={11} />}>
+                          <Badge
+                            size="xs"
+                            color="success"
+                            leftSection={<IconShieldCheck size={11} />}
+                          >
                             Người đã đánh giá
                           </Badge>
                         ) : null}
@@ -214,7 +273,7 @@ export function MessagesPage() {
                 </Group>
 
                 {contextCompany || contextPost ? (
-                  <Card p="xs" bg="var(--app-bg-canvas)">
+                  <Card p="xs" bg="var(--app-bg-subtle)">
                     <Group justify="space-between" wrap="wrap" gap="xs">
                       <Stack gap={2} flex={1}>
                         <Text size="xs" fw={700} c="brand">
@@ -256,49 +315,7 @@ export function MessagesPage() {
                         tại cơ sở này.
                       </Text>
                     ) : (
-                      activeThread.messages.map((msg) => {
-                        const isMe = msg.sender === 'me';
-                        return (
-                          <Group key={msg.id} justify={isMe ? 'flex-end' : 'flex-start'}>
-                            <Box
-                              maw={{ base: '88%', sm: '75%' }}
-                              p="sm"
-                              bdrs="md"
-                              bg={isMe ? 'var(--mantine-color-brand-6)' : 'var(--app-bg-canvas)'}
-                              c={isMe ? 'white' : undefined}
-                              bd={isMe ? undefined : '1px solid var(--app-border-subtle)'}
-                            >
-                              <Stack gap="xs">
-                                <Text size="sm">{msg.text}</Text>
-                                {msg.profileCard ? (
-                                  <Card p="xs" c="var(--mantine-color-text)">
-                                    <Stack gap={4}>
-                                      <Group justify="space-between">
-                                        <Text size="xs" fw={700}>
-                                          Thẻ hồ sơ: {msg.profileCard.fullName}
-                                        </Text>
-                                        <Badge size="xs" color="teal">
-                                          {msg.profileCard.yearLabel}
-                                        </Badge>
-                                      </Group>
-                                      <Text size="xs" c="dimmed">
-                                        {msg.profileCard.university} • {msg.profileCard.major}
-                                      </Text>
-                                      <Group gap={4} wrap="wrap">
-                                        {msg.profileCard.skills.map((s) => (
-                                          <Badge key={s} size="xs" color="brand">
-                                            {s}
-                                          </Badge>
-                                        ))}
-                                      </Group>
-                                    </Stack>
-                                  </Card>
-                                ) : null}
-                              </Stack>
-                            </Box>
-                          </Group>
-                        );
-                      })
+                      activeThread.messages.map((msg) => <MessageBubble key={msg.id} msg={msg} />)
                     )}
                   </Stack>
                 </ScrollArea>
@@ -310,7 +327,7 @@ export function MessagesPage() {
                     <Button
                       size="xs"
                       variant="light"
-                      color="teal"
+                      color="success"
                       leftSection={<IconIdBadge2 size={15} />}
                       onClick={() => handleSend(true)}
                     >

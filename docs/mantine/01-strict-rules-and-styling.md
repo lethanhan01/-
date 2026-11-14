@@ -102,30 +102,38 @@ Không cài **Tailwind CSS**, **`styled-components`**, **Emotion** hay CSS-in-JS
    - Dùng cho style phức tạp, responsive media query, trạng thái hover/active/data-attribute.
    - Các helper PostCSS bắt buộc tận dụng:
      - `rem(...)` cho font-size, padding, margin, width, radius tùy chỉnh.
-     - `em(...)` hoặc biến `$mantine-breakpoint-xs|sm|md|lg|xl` cho `@media` queries (xem mẫu [Welcome.module.css](../../client/src/components/Welcome/Welcome.module.css)).
-     - `light-dark(lightValue, darkValue)` hoặc `@mixin light` / `@mixin dark` cho màu thích ứng Light/Dark.
+     - `em(...)` hoặc biến `$mantine-breakpoint-xs|sm|md|lg|xl` cho `@media` queries (xem mẫu [MessagesPage.module.css](../../client/src/pages/MessagesPage.module.css)).
+     - `light-dark(lightValue, darkValue)` hoặc `@mixin light` / `@mixin dark` cho màu thích ứng Light/Dark (ưu tiên các biến semantic tự đổi theo color scheme trước).
      - `@mixin hover` cho hiệu ứng hover an toàn trên thiết bị cảm ứng.
-     - `mod={{ active }}` kết hợp selector `&[data-active]`.
+     - `mod={{ active }}` kết hợp selector `&[data-active]` và `:focus-visible`.
+   - **Tách CSS theo component**: Mọi class riêng của component/trang (kể cả trạng thái `active`, `selected`, `focused`, `me`, `dropzoneInner`) phải đặt trong `<ComponentName>.module.css`. Không thêm class riêng của component vào [global.css](../../client/src/styles/global.css).
 3. **Styles API (`classNames`, `styles`, `vars`)**:
    - Dùng khi cần chỉnh phần tử con bên trong component Mantine (xem danh sách selector tại tab **Styles API** của từng component trên `mantine.dev`).
 
 ```css
-/* SelectableCard.module.css — Chuẩn CSS Module của dự án */
-.card {
-  transition: border-color 150ms ease, background-color 150ms ease;
+/* MessagesPage.module.css — Chuẩn CSS Module của dự án */
+.threadButton {
+  display: block;
+  text-align: left;
+  border-radius: var(--mantine-radius-md);
 
-  @mixin hover {
-    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
-  }
-
-  .root[data-active] & {
-    border-color: var(--mantine-primary-color-filled);
+  &:focus-visible {
+    outline: rem(2px) solid var(--mantine-primary-color-filled);
+    outline-offset: rem(2px);
   }
 }
 
-@media (max-width: $mantine-breakpoint-sm) {
-  .card {
-    padding: var(--mantine-spacing-sm);
+.threadCard {
+  background-color: var(--app-bg-subtle);
+  transition: border-color 150ms ease, background-color 150ms ease;
+
+  @mixin hover {
+    background-color: var(--mantine-color-default-hover);
+  }
+
+  .threadButton[data-active] & {
+    background-color: var(--mantine-primary-color-light);
+    border-color: var(--mantine-primary-color-filled);
   }
 }
 ```
@@ -140,14 +148,75 @@ Không cài **Tailwind CSS**, **`styled-components`**, **Emotion** hay CSS-in-JS
 - **SAI (Cấm)**:
   - String `'px'` trong style props hoặc inline style: `mt="24px"`, `style={{ fontSize: '14px', padding: '12px' }}`
   - CSS `px` trực tiếp trong `*.module.css`: `font-size: 18px;`, `margin-bottom: 16px;`, `gap: 12px;`
-- **Ngoại lệ hợp lệ**: `1px` cho hairline border (`border: 1px solid ...`) hoặc kích thước cố định của ảnh/media.
+- **Ngoại lệ hợp lệ**: `1px` cho hairline border bên trong `*.module.css` (`border: 1px solid var(--mantine-color-default-border);`) hoặc kích thước cố định của ảnh/media.
 
 ---
 
-## 5. Checklist tự kiểm tra trước khi hoàn thành UI
+## 5. Hệ thống Semantic Colors, Borders & Token Ngữ Nghĩa
+
+Không tự ý chọn màu vật lý, shade số, hoặc viết border/style inline trong TSX. Mọi màu sắc đều đi qua vai trò ngữ nghĩa đăng ký trong [theme.ts](../../client/src/theme.ts).
+
+### Bảng Vai trò Màu Semantic (`color` / `c` prop)
+
+| Vai trò (Tên bắt buộc) | Ánh xạ trong `theme.ts` | Ngữ cảnh sử dụng | Tên vật lý bị cấm |
+|---|---|---|---|
+| `brand` | `primaryColor: 'brand'` | Hành động chính, item đang chọn, trạng thái mới (`new`), hỏi đáp | `blue`, `indigo`, `pink`, `brand-5`, `brand-6` |
+| `success` | `virtualColor` → `teal` | Xác thực, khớp lịch, giờ rảnh, nút gửi hồ sơ, bài đánh giá | `teal`, `green`, `teal-0`..`teal-9` |
+| `warning` | `virtualColor` → `amber` | Cảnh giác nhẹ, tuyển gấp (`urgent`), kết quả cần kiểm tra | `amber`, `yellow`, `orange` |
+| `danger` | `virtualColor` → `red` | Báo cáo lừa đảo, sắp hết hạn (`expiring`), trùng lịch, giờ bận, unread badge | `red`, `rose`, `red-1`..`red-9` |
+| `neutral` | `virtualColor` → `gray` | Khoảng cách, đếm số trung tính, badge phụ | `gray`, `slate`, `dark` |
+| `dimmed` *(chỉ dùng trên `c`)* | `--mantine-color-dimmed` | Văn bản phụ, mô tả thời gian/địa chỉ | `white`, `black`, `--app-text-muted` |
+
+### Bảng CSS Variables Ngữ Nghĩa được phép dùng
+
+| Nhóm | Biến chuẩn được phép | Biến / Giá trị bị cấm |
+|---|---|---|
+| Nền trang & Nền phụ | `--mantine-color-body`, `--mantine-color-default`, `--mantine-color-default-hover`, `--app-bg-subtle` | `--app-bg-canvas`, `--app-bg-surface`, `#FFFFFF`, `#0F172A`, `#1E293B` |
+| Viền (Border) | `--mantine-color-default-border`, `--mantine-primary-color-filled`, `--mantine-color-<role>-outline` | `--app-border-subtle`, `bd="1px solid ..."`, `bd="2px solid ..."` |
+| Chữ & Tương phản | `--mantine-color-text`, `--mantine-color-dimmed`, `--mantine-primary-color-contrast` | `--app-text-muted`, `c="white"`, `c="black"` |
+| Màu vai trò trong CSS | `--mantine-primary-color-filled`, `--mantine-primary-color-light`, `--mantine-color-<role>-filled`, `--mantine-color-<role>-light` | `--mantine-color-brand-6`, `--mantine-color-teal-0`, `rgb(...)`, `rgba(...)` |
+
+### Ví dụ đối chiếu: Border, Bubble & Inline Style
+
+```tsx
+// SAI: Dùng Box + chuỗi border shorthand + shade số + màu vật lý + hardcode white
+<Box
+  p="sm"
+  bdrs="md"
+  bg={isMe ? 'var(--mantine-color-brand-6)' : 'var(--app-bg-canvas)'}
+  c={isMe ? 'white' : undefined}
+  bd={isMe ? undefined : '1px solid var(--app-border-subtle)'}
+>
+  ...
+</Box>
+
+// SAI: Dùng style inline cho table scroll hoặc dropzone
+<Box style={{ overflowX: 'auto' }}><Table /></Box>
+<Group style={{ pointerEvents: 'none' }}>...</Group>
+
+// ĐÚNG: Dùng Paper withBorder + CSS Module + mod + semantic tokens
+<Paper
+  withBorder={!isMe}
+  p="sm"
+  radius="md"
+  className={classes.bubble}
+  mod={{ me: isMe }}
+>
+  ...
+</Paper>
+
+// ĐÚNG: Dùng component chuẩn hoặc CSS Module
+<Table.ScrollContainer minWidth={600}><Table /></Table.ScrollContainer>
+<Group className={classes.dropzoneInner}>...</Group>
+```
+
+---
+
+## 6. Checklist tự kiểm tra trước khi hoàn thành UI
 
 - [ ] Đã kiểm tra component/hook có sẵn trên `mantine.dev` và block tương ứng trên `ui.mantine.dev`?
-- [ ] Không còn raw HTML tag (`div`, `span`, `p`, `h1`–`h6`, `button`, `a`, `input`, `form`, `ul`, `table`, `img`)?
-- [ ] Không có `onClick` trên `Box`/`Paper`/`Text`, đủ landmark semantic & `aria-label`?
-- [ ] Không hardcode string/CSS `px` ở font/spacing/radius (đã dùng scale token, `--mantine-*`, hoặc `rem()`)?
-- [ ] Custom component mới được dựng từ Mantine primitives và tuân thủ CSS Modules?
+- [ ] Không còn raw HTML tag (`div`, `span`, `p`, `h1`–`h6`, `button`, `a`, `input`, `form`, `ul`, `table`, `img`, `svg`)?
+- [ ] Không có `onClick` trên `Box`/`Paper`/`Card`/`Text`, đủ landmark semantic, `aria-current`/`aria-pressed` và `aria-label`?
+- [ ] Không dùng prop `bd=`, `bdrs=`, `style={{...}}`, và không hardcode string/CSS `px` ở font/spacing/radius?
+- [ ] Toàn bộ màu sắc dùng đúng vai trò semantic (`brand`, `success`, `warning`, `danger`, `neutral`, `dimmed`) và biến CSS semantic — không dùng tên màu vật lý, shade số `0..9`, hex hay `rgb()`?
+- [ ] Custom component và style theo trạng thái đặt trong `*.module.css` (không nhét class riêng vào `global.css`) và vượt qua `yarn test` (`check` + `stylelint` + `ui:lint` + `vitest` + `build`)?

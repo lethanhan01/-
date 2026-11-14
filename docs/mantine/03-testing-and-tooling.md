@@ -8,7 +8,7 @@ Tài liệu này bám sát cấu hình thực tế của template Vite+ trong `c
 
 Mọi component Mantine đều yêu cầu `<MantineProvider>`. Do đó trong test **bắt buộc** import `render`, `screen`, `userEvent` từ `@test-utils` ([client/test-utils/index.ts](../../client/test-utils/index.ts)), **không** import `render` trực tiếp từ `@testing-library/react`.
 
-File [client/test-utils/render.tsx](../../client/test-utils/render.tsx) đã tự bọc `<MantineProvider theme={theme} env="test">` (`env="test"` tắt transition/animation để test ổn định và nhanh hơn).
+File [client/test-utils/render.tsx](../../client/test-utils/render.tsx) đã tự bọc `<MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver} env="test">` (`env="test"` tắt transition/animation để test ổn định và nhanh hơn).
 
 ### Ví dụ viết test tương tác chuẩn
 
@@ -42,8 +42,8 @@ describe('LoginForm', () => {
 
 ## 2. Storybook (`*.story.tsx`)
 
-- Đặt file `<ComponentName>.story.tsx` ngay cạnh component (xem mẫu [Welcome.story.tsx](../../client/src/components/Welcome/Welcome.story.tsx)).
-- Decorator trong [client/.storybook/preview.tsx](../../client/.storybook/preview.tsx) đã tự động bọc `<MantineProvider theme={theme} forceColorScheme={scheme}>` và `<ColorSchemeScript />`.
+- Đặt file `<ComponentName>.story.tsx` ngay cạnh component (xem mẫu [TrustBadge.story.tsx](../../client/src/components/TrustBadge/TrustBadge.story.tsx)).
+- Decorator trong [client/.storybook/preview.tsx](../../client/.storybook/preview.tsx) đã tự động bọc `<MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver} forceColorScheme={scheme}>` và `<ColorSchemeScript />`.
 - Có thể bấm phím tắt `Ctrl + J` (Windows/Linux) hoặc `Cmd + J` (macOS) ngay trong Storybook để kiểm tra component ở cả 2 chế độ **Light** và **Dark**.
 
 ---
@@ -57,12 +57,13 @@ Chạy các lệnh sau từ thư mục `client/`:
 | `yarn dev` | Khởi động dev server (`vp dev`) |
 | `yarn check` | Chạy `vp check`: kiểm tra format (`oxfmt`), lint (`oxlint` theo `oxc-config-mantine`), và TypeScript typecheck |
 | `yarn check:fix` | Tự sửa lỗi format và lint auto-fixable (`vp check --fix`) |
-| `yarn stylelint` | Kiểm tra toàn bộ file `**/*.css` theo [client/.stylelintrc.json](../../client/.stylelintrc.json) |
+| `yarn stylelint` | Kiểm tra toàn bộ file `**/*.css` theo [client/.stylelintrc.json](../../client/.stylelintrc.json) (cấm hex/`rgb()`/`hsl()`) |
+| `yarn ui:lint` | Chạy [check-ui-rules.mjs](../../client/scripts/check-ui-rules.mjs) kiểm tra Semantic Colors, cấm `bd`/`bdrs`/`style={{}}`, cấm raw HTML và non-semantic `onClick` |
 | `yarn typecheck` | Kiểm tra kiểu TypeScript (`tsc --noEmit`) |
 | `yarn vitest` | Chạy toàn bộ unit/component tests một lần (`vp test run`) |
 | `yarn vitest:watch` | Chạy Vitest ở chế độ watch (`vp test watch`) |
 | `yarn build` | Typecheck (`tsc`) + build production (`vp build`) |
 | `yarn build:analyze` | Build kèm bundle size report tại `dist/stats.html` |
-| `yarn test` | Pipeline kiểm tra đầy đủ: `check` → `stylelint` → `vitest` → `build` |
+| `yarn test` | Pipeline kiểm tra đầy đủ: `check` → `stylelint` → `ui:lint` → `vitest` → `build` |
 | `yarn storybook` | Mở Storybook dev server tại cổng `6006` |
 | `yarn storybook:build` | Build tĩnh Storybook ra `storybook-static` |

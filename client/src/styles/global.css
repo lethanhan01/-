@@ -1,5 +1,5 @@
 body {
-  background-color: var(--app-bg-canvas);
+  background-color: var(--mantine-color-body);
 }
 
 .app-tabular {
@@ -9,65 +9,14 @@ body {
 .app-main-content {
   padding-bottom: var(--mantine-spacing-xl);
 
-  @media (max-width: $mantine-breakpoint-sm) {
+  @media (max-width: mantine-breakpoint-sm) {
     padding-bottom: calc(var(--app-bottom-nav-h) + var(--mantine-spacing-lg));
   }
 }
 
-.app-mobile-bottom-nav {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 200;
-  height: var(--app-bottom-nav-h);
-  background-color: var(--app-bg-surface);
-  border-top: 1px solid var(--app-border-subtle);
-}
-
-.app-map-container {
-  width: 100%;
-  height: rem(480px);
-  border-radius: var(--mantine-radius-md);
-  border: 1px solid var(--app-border-subtle);
-  overflow: hidden;
-  z-index: 1;
-
-  @media (max-width: $mantine-breakpoint-sm) {
-    height: rem(340px);
-  }
-}
-
-.app-schedule-cell {
-  width: 100%;
-  min-height: rem(28px);
-  border-radius: var(--mantine-radius-xs);
-  border: 1px solid var(--app-border-subtle);
-  transition: background-color 120ms ease, border-color 120ms ease;
-
-  &[data-free='true'] {
-    background-color: light-dark(var(--mantine-color-teal-0), rgb(13 148 136 / 16%));
-    border-color: light-dark(var(--mantine-color-teal-3), var(--mantine-color-teal-8));
-  }
-
-  &[data-busy='true'] {
-    background-color: light-dark(var(--mantine-color-red-1), rgb(220 38 38 / 28%));
-    border-color: light-dark(var(--mantine-color-red-4), var(--mantine-color-red-7));
-  }
-
-  @mixin hover {
-    border-color: var(--mantine-color-brand-6);
-  }
-}
-
-.app-map-pin-selected {
-  outline: rem(3px) solid var(--mantine-color-brand-6);
-  outline-offset: rem(2px);
-}
-
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background-color: var(--app-bg-surface);
+  background-color: var(--mantine-color-default);
   color: var(--mantine-color-text);
   border-radius: var(--mantine-radius-md);
 }

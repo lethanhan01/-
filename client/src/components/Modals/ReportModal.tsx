@@ -56,7 +56,7 @@ export function ReportModal({ opened, onClose, companyId, companyName, jobId }: 
     <Modal opened={opened} onClose={onClose} title="Báo cáo dấu hiệu lừa đảo & vi phạm (CS-01)">
       <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
         <Stack gap="md">
-          <Alert color="red" icon={<IconAlertTriangle size={18} />} title={companyName}>
+          <Alert color="danger" icon={<IconAlertTriangle size={18} />} title={companyName}>
             <Text size="xs">
               Báo cáo của bạn sẽ được gắn cảnh báo minh bạch cho sinh viên khác và gửi tới ban quản
               trị xử lý.
@@ -89,7 +89,7 @@ export function ReportModal({ opened, onClose, companyId, companyName, jobId }: 
             <Button variant="default" onClick={onClose}>
               Hủy
             </Button>
-            <Button type="submit" color="red">
+            <Button type="submit" color="danger">
               Gửi báo cáo ngay
             </Button>
           </Group>

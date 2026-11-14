@@ -15,8 +15,11 @@
     "comment-empty-line-before": null,
     "at-rule-no-unknown": null,
     "value-keyword-case": null,
+    "color-no-hex": true,
+    "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla"],
     "media-feature-range-notation": null,
     "media-query-no-invalid": null,
+    "media-feature-name-value-no-unknown": null,
     "selector-pseudo-class-no-unknown": [
       true,
       {

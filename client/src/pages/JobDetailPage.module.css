@@ -1,0 +1,21 @@
+.interactiveButton {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: var(--mantine-radius-md);
+
+  &:focus-visible {
+    outline: rem(2px) solid var(--mantine-primary-color-filled);
+    outline-offset: rem(2px);
+  }
+}
+
+.interactiveCard {
+  background-color: var(--app-bg-subtle);
+  transition: border-color 150ms ease, background-color 150ms ease;
+
+  @mixin hover {
+    border-color: var(--mantine-primary-color-filled);
+    background-color: var(--mantine-color-default-hover);
+  }
+}

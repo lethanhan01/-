@@ -1,0 +1,12 @@
+.mapContainer {
+  width: 100%;
+  height: rem(480px);
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-default-border);
+  overflow: hidden;
+  z-index: 1;
+
+  @media (max-width: $mantine-breakpoint-sm) {
+    height: rem(340px);
+  }
+}

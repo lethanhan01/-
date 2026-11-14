@@ -63,7 +63,7 @@ Dự án có sẵn bộ skills tại `client/.agents/skills/` (và bản đồng
 
 ## 4. Mục lục tài liệu trong dự án
 
-1. [01-strict-rules-and-styling.md](./01-strict-rules-and-styling.md) — Quy tắc bắt buộc (Mantine-first, custom từ primitives, cấm raw HTML/non-semantic, cấm hardcode `px`, cấm Tailwind/CSS-in-JS) & chuẩn styling.
-2. [02-setup-forms-hooks-guide.md](./02-setup-forms-hooks-guide.md) — Setup, CSS import order, Theme, hướng dẫn thực hành `@mantine/form`, `@mantine/hooks`, và bảng cài đặt package mở rộng.
-3. [03-testing-and-tooling.md](./03-testing-and-tooling.md) — Vitest với `@test-utils`, Storybook (`*.story.tsx`), và các lệnh `vp` / `yarn`.
+1. [01-strict-rules-and-styling.md](./01-strict-rules-and-styling.md) — Quy tắc bắt buộc (Mantine-first, Semantic Colors & Tokens, cấm `bd`/`bdrs`/`style={{}}`, cấm raw HTML/non-semantic, cấm hardcode `px`) & chuẩn CSS Modules.
+2. [02-setup-forms-hooks-guide.md](./02-setup-forms-hooks-guide.md) — Setup, CSS import order, Theme (`virtualColor` + `cssVariablesResolver`), hướng dẫn `@mantine/form`, `@mantine/hooks`, và trạng thái package.
+3. [03-testing-and-tooling.md](./03-testing-and-tooling.md) — Vitest với `@test-utils`, Storybook (`*.story.tsx`), `yarn ui:lint`, và các lệnh `vp` / `yarn`.
 4. [AGENTS.md](../../AGENTS.md) — Bộ rule ngắn gọn dành cho AI coding agents.

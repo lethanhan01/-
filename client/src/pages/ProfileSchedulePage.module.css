@@ -1,0 +1,31 @@
+.dropzoneInner {
+  pointer-events: none;
+}
+
+.scheduleCell {
+  width: 100%;
+  min-height: rem(28px);
+  border-radius: var(--mantine-radius-xs);
+  border: 1px solid var(--mantine-color-default-border);
+  background-color: transparent;
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  &[data-free] {
+    background-color: var(--mantine-color-success-light);
+    border-color: var(--mantine-color-success-outline);
+  }
+
+  &[data-busy] {
+    background-color: var(--mantine-color-danger-light);
+    border-color: var(--mantine-color-danger-outline);
+  }
+
+  @mixin hover {
+    border-color: var(--mantine-primary-color-filled);
+  }
+
+  &:focus-visible {
+    outline: rem(2px) solid var(--mantine-primary-color-filled);
+    outline-offset: rem(1px);
+  }
+}

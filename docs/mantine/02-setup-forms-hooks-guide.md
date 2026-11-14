@@ -22,40 +22,51 @@ import { Router } from './Router';
 import { theme } from './theme';
 ```
 
-### Theme tập trung (`client/src/theme.ts`)
+### Theme tập trung & Semantic Tokens (`client/src/theme.ts`)
 
-Đưa cấu hình lặp lại nhiều nơi (màu chủ đạo, radius mặc định, font, `defaultProps` của component) vào `createTheme` thay vì lặp lại trên từng trang:
+Đưa cấu hình lặp lại nhiều nơi (màu chủ đạo, radius mặc định, font, `defaultProps` của component, và `virtualColor` cho vai trò màu semantic) vào `createTheme` thay vì lặp lại trên từng trang:
 
 ```ts
-import { Button, createTheme } from '@mantine/core';
+import { Button, createTheme, CSSVariablesResolver, virtualColor } from '@mantine/core';
 
 export const theme = createTheme({
-  primaryColor: 'blue',
+  primaryColor: 'brand',
+  primaryShade: { light: 6, dark: 5 },
   defaultRadius: 'md',
+  colors: {
+    brand,
+    amber,
+    success: virtualColor({ name: 'success', light: 'teal', dark: 'teal' }),
+    warning: virtualColor({ name: 'warning', light: 'amber', dark: 'amber' }),
+    danger: virtualColor({ name: 'danger', light: 'red', dark: 'red' }),
+    neutral: virtualColor({ name: 'neutral', light: 'gray', dark: 'gray' }),
+  },
   components: {
     Button: Button.extend({
-      defaultProps: {
-        fw: 600,
-      },
+      defaultProps: { fw: 600, radius: 'md' },
     }),
   },
+});
+
+export const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: { '--app-bottom-nav-h': '4.25rem' },
+  light: { '--app-bg-subtle': 'var(--mantine-color-gray-0)' },
+  dark: { '--app-bg-subtle': 'var(--mantine-color-dark-7)' },
 });
 ```
 
 ### Color Scheme (Light / Dark / Auto)
 
-- Sử dụng `useMantineColorScheme()` để đổi chế độ sáng/tối (xem mẫu [ColorSchemeToggle.tsx](../../client/src/components/ColorSchemeToggle/ColorSchemeToggle.tsx)).
-- Trong CSS Modules, luôn ưu tiên `light-dark(...)` hoặc biến semantic (`--mantine-color-body`, `--mantine-color-text`).
+- Sử dụng `useMantineColorScheme()` để đổi chế độ sáng/tối (xem mẫu [AppLayout.tsx](../../client/src/components/Layout/AppLayout.tsx)).
+- Trong CSS Modules, dùng các biến semantic tự thích ứng Light/Dark của Mantine (`--mantine-color-body`, `--mantine-color-default`, `--mantine-color-default-border`, `--mantine-color-text`, `--mantine-color-dimmed`, `--app-bg-subtle`), hoặc `light-dark(var(--mantine-color-...), var(--mantine-color-...))` không chứa mã hex hay shade số trực tiếp.
 - Tham khảo thêm về `ColorSchemeScript` (hiện đã gắn trong [client/.storybook/preview.tsx](../../client/.storybook/preview.tsx)) tại [`https://mantine.dev/theming/color-schemes/`](https://mantine.dev/theming/color-schemes/).
+- Khi dùng `@mantine/dropzone`, đặt `pointer-events: none;` vào class `.dropzoneInner` trong `*.module.css` thay vì `style={{ pointerEvents: 'none' }}`.
 
 ---
 
 ## 2. Hướng dẫn sử dụng Forms (`@mantine/form`)
 
-> **Lưu ý cài đặt**: `@mantine/form` chưa cài sẵn trong `client/package.json`. Khi bắt đầu xây dựng form, chạy trong `client/`:
-> ```powershell
-> yarn add @mantine/form
-> ```
+> **Trạng thái package**: `@mantine/form` đã được cài sẵn trong [client/package.json](../../client/package.json).
 > Tài liệu gốc đầy đủ: [`https://mantine.dev/form/use-form/`](https://mantine.dev/form/use-form/)
 
 ### Chuẩn Mantine v9: `mode: 'uncontrolled'` + `form.key()`
@@ -196,9 +207,9 @@ const columns = useMatches({ base: 1, sm: 2, lg: 4 });
 
 ---
 
-## 4. Cài đặt Package mở rộng (Install On-Demand)
+## 4. Trạng thái Package mở rộng trong `client/package.json`
 
-Chỉ chạy `yarn add` trong `client/` khi tính năng thực sự cần:
+Các package đã cài sẵn: `@mantine/form`, `@mantine/dropzone`, `@mantine/modals`, `@mantine/notifications`, `@tabler/icons-react`, `leaflet`. Chỉ chạy `yarn add` trong `client/` khi tính năng thực sự cần package chưa có:
 
 | Nhu cầu | Lệnh `yarn add` (trong `client/`) | Tích hợp bắt buộc | Tài liệu |
 |---|---|---|---|

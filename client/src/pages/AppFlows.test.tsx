@@ -7,6 +7,7 @@ import { CommunityFeedPage } from './CommunityFeedPage';
 import { JobApplyPage } from './JobApplyPage';
 import { JobDetailPage } from './JobDetailPage';
 import { JobsMapPage } from './JobsMapPage';
+import { MessagesPage } from './MessagesPage';
 import { ProfileSchedulePage } from './ProfileSchedulePage';
 
 function renderAppRoute(initialEntry: string) {
@@ -22,6 +23,7 @@ function renderAppRoute(initialEntry: string) {
             <Route path="/jobs/:jobId" element={<JobDetailPage />} />
             <Route path="/jobs/:jobId/apply" element={<JobApplyPage />} />
             <Route path="/community" element={<CommunityFeedPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
           </Routes>
         </MemoryRouter>
       </AppStateProvider>
@@ -118,5 +120,36 @@ describe('Student Part-Time App Flows', () => {
 
     expect(await screen.findByText(/Bản đồ Việc làm Thêm \(MH-01\)/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Nhân viên Pha chế Ca Tối/i).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('switches threads with aria-current and sends message + profile card on MH-05', async () => {
+    const user = userEvent.setup();
+    renderAppRoute('/messages');
+
+    expect(screen.getByText(/Nhắn tin Cộng đồng giữa Sinh viên \(MH-05\)/i)).toBeInTheDocument();
+
+    const firstThreadBtn = screen.getByRole('button', { name: /Trần Gia Bảo/i });
+    const secondThreadBtn = screen.getByRole('button', { name: /Nguyễn Ngọc Linh/i });
+
+    expect(firstThreadBtn).toHaveAttribute('aria-current', 'true');
+    expect(secondThreadBtn).not.toHaveAttribute('aria-current', 'true');
+
+    await user.click(secondThreadBtn);
+    expect(secondThreadBtn).toHaveAttribute('aria-current', 'true');
+    expect(firstThreadBtn).not.toHaveAttribute('aria-current', 'true');
+
+    await user.type(
+      screen.getByPlaceholderText(/Nhập tin nhắn trao đổi kinh nghiệm/i),
+      'Ca tối có được hỗ trợ gửi xe không bạn?'
+    );
+    await user.click(screen.getByRole('button', { name: /^Gửi$/i }));
+    expect(
+      (await screen.findAllByText('Ca tối có được hỗ trợ gửi xe không bạn?')).length
+    ).toBeGreaterThanOrEqual(2);
+
+    await user.click(screen.getByRole('button', { name: /Gửi nhanh thẻ hồ sơ cá nhân/i }));
+    expect(
+      (await screen.findAllByText(/Thẻ hồ sơ: Nguyễn Minh Anh/i)).length
+    ).toBeGreaterThanOrEqual(1);
   });
 });

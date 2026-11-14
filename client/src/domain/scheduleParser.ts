@@ -78,7 +78,7 @@ function normalizeDayToken(raw: string): Weekday | null {
 }
 
 function parseHourToken(raw: string): number | null {
-  const match = raw.trim().match(/^(\d{1,2})(?::(\d{2}))?/);
+  const match = /^(\d{1,2})(?::(\d{2}))?/.exec(raw.trim());
   if (!match) {
     return null;
   }
@@ -122,7 +122,7 @@ export function parseCsvSchedule(content: string): ParsedSchedulePreview {
 }
 
 function parseIcsDateHour(val: string): { date: Date; hour: number } | null {
-  const match = val.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/);
+  const match = /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/.exec(val);
   if (!match) {
     return null;
   }
@@ -133,6 +133,56 @@ function parseIcsDateHour(val: string): { date: Date; hour: number } | null {
 
 const JS_DAY_TO_WEEKDAY: Weekday[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
+function extractDaysFromVevent(byDayToken: string | undefined, startDate: Date): Weekday[] {
+  if (!byDayToken) {
+    return [JS_DAY_TO_WEEKDAY[startDate.getDay()]];
+  }
+  const days: Weekday[] = [];
+  for (const token of byDayToken.split(',')) {
+    const mapped = normalizeDayToken(token);
+    if (mapped) {
+      days.push(mapped);
+    }
+  }
+  return days;
+}
+
+function parseVeventBlock(
+  block: string,
+  busyMap: BusyScheduleMap,
+  subjects: ParsedSchedulePreview['subjects']
+) {
+  const endIdx = block.indexOf('END:VEVENT');
+  const body = endIdx >= 0 ? block.slice(0, endIdx) : block;
+
+  const dtStartMatch = /DTSTART[^:]*:([^\r\n]+)/.exec(body);
+  const dtEndMatch = /DTEND[^:]*:([^\r\n]+)/.exec(body);
+  if (!dtStartMatch || !dtEndMatch) {
+    return;
+  }
+
+  const startInfo = parseIcsDateHour(dtStartMatch[1].trim());
+  const endInfo = parseIcsDateHour(dtEndMatch[1].trim());
+  if (!startInfo || !endInfo || endInfo.hour <= startInfo.hour) {
+    return;
+  }
+
+  const summaryMatch = /SUMMARY:([^\r\n]+)/.exec(body);
+  const byDayMatch = /BYDAY=([A-Z,]+)/.exec(body);
+  const title = summaryMatch ? summaryMatch[1].trim() : 'Môn học';
+  const days = extractDaysFromVevent(byDayMatch?.[1], startInfo.date);
+
+  for (const day of days) {
+    subjects.push({
+      day,
+      startHour: Math.floor(startInfo.hour),
+      endHour: Math.ceil(endInfo.hour),
+      title,
+    });
+    addBusyRange(busyMap, day, startInfo.hour, endInfo.hour);
+  }
+}
+
 /**
  * Parses standard .ics VEVENT blocks into weekly busy slots.
  */
@@ -140,48 +190,8 @@ export function parseIcsSchedule(content: string): ParsedSchedulePreview {
   const busyMap = createEmptyBusyMap();
   const subjects: ParsedSchedulePreview['subjects'] = [];
 
-  const blocks = content.split('BEGIN:VEVENT').slice(1);
-  for (const block of blocks) {
-    const endIdx = block.indexOf('END:VEVENT');
-    const body = endIdx >= 0 ? block.slice(0, endIdx) : block;
-
-    const dtStartMatch = body.match(/DTSTART[^:]*:([^\r\n]+)/);
-    const dtEndMatch = body.match(/DTEND[^:]*:([^\r\n]+)/);
-    const summaryMatch = body.match(/SUMMARY:([^\r\n]+)/);
-    const byDayMatch = body.match(/BYDAY=([A-Z,]+)/);
-
-    if (!dtStartMatch || !dtEndMatch) {
-      continue;
-    }
-    const startInfo = parseIcsDateHour(dtStartMatch[1].trim());
-    const endInfo = parseIcsDateHour(dtEndMatch[1].trim());
-    if (!startInfo || !endInfo || endInfo.hour <= startInfo.hour) {
-      continue;
-    }
-
-    const title = summaryMatch ? summaryMatch[1].trim() : 'Môn học';
-    const days: Weekday[] = [];
-
-    if (byDayMatch) {
-      for (const token of byDayMatch[1].split(',')) {
-        const mapped = normalizeDayToken(token);
-        if (mapped) {
-          days.push(mapped);
-        }
-      }
-    } else {
-      days.push(JS_DAY_TO_WEEKDAY[startInfo.date.getDay()]);
-    }
-
-    for (const day of days) {
-      subjects.push({
-        day,
-        startHour: Math.floor(startInfo.hour),
-        endHour: Math.ceil(endInfo.hour),
-        title,
-      });
-      addBusyRange(busyMap, day, startInfo.hour, endInfo.hour);
-    }
+  for (const block of content.split('BEGIN:VEVENT').slice(1)) {
+    parseVeventBlock(block, busyMap, subjects);
   }
 
   return { source: 'ics', subjects, busyMap };

@@ -12,9 +12,18 @@ interface TrustBadgeProps {
   compact?: boolean;
 }
 
+function getScoreColor(score: number): string {
+  if (score >= 4.3) {
+    return 'success';
+  }
+  if (score >= 3.5) {
+    return 'warning';
+  }
+  return 'danger';
+}
+
 export function TrustBadge({ company, compact = false }: TrustBadgeProps) {
-  const scoreColor =
-    company.trustScore >= 4.3 ? 'teal' : company.trustScore >= 3.5 ? 'amber' : 'red';
+  const scoreColor = getScoreColor(company.trustScore);
 
   return (
     <Group gap="xs" wrap="wrap">
@@ -24,7 +33,7 @@ export function TrustBadge({ company, compact = false }: TrustBadgeProps) {
 
       {!compact && company.businessLicenseVerified ? (
         <Tooltip label={`Giấy phép KD đã xác thực: ${company.businessLicenseCode ?? ''}`}>
-          <Badge color="teal" variant="outline" leftSection={<IconCertificate size={12} />}>
+          <Badge color="success" variant="outline" leftSection={<IconCertificate size={12} />}>
             GPKD đã xác thực
           </Badge>
         </Tooltip>
@@ -37,7 +46,7 @@ export function TrustBadge({ company, compact = false }: TrustBadgeProps) {
       ) : null}
 
       {company.warningFlag ? (
-        <Badge color="red" variant="filled" leftSection={<IconAlertTriangle size={12} />}>
+        <Badge color="danger" variant="filled" leftSection={<IconAlertTriangle size={12} />}>
           Có cảnh báo cộng đồng
         </Badge>
       ) : null}

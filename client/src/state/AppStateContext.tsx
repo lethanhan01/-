@@ -29,7 +29,7 @@ function loadInitialState(): PersistedAppState {
       return createSeedState();
     }
     const parsed = JSON.parse(raw) as Partial<PersistedAppState>;
-    if (parsed && parsed.schemaVersion === 1 && parsed.profile && Array.isArray(parsed.rawJobs)) {
+    if (parsed?.schemaVersion === 1 && parsed.profile && Array.isArray(parsed.rawJobs)) {
       return parsed as PersistedAppState;
     }
   } catch {
@@ -196,7 +196,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     notifications.show({
       title: 'Đã đồng bộ dữ liệu thời gian thực',
       message: 'Trạng thái ghim tuyển dụng và danh sách tin hết hạn vừa được cập nhật.',
-      color: 'teal',
+      color: 'success',
     });
   }, []);
 
@@ -239,7 +239,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     notifications.show({
       title: 'Nộp hồ sơ ứng tuyển thành công',
       message: `Đã gửi đơn ứng tuyển vị trí ${input.jobTitle}. Bạn có thể theo dõi tại Lịch sử hoạt động.`,
-      color: 'teal',
+      color: 'success',
     });
     return record;
   }, []);
@@ -263,17 +263,16 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         comments: [],
       };
 
+      const ratings = input.criteriaRatings;
       setState((prev) => {
         const nextCompanies =
-          input.type === 'review' && input.companyId && input.criteriaRatings
+          input.type === 'review' && input.companyId && ratings
             ? prev.companies.map((c) => {
                 if (c.id !== input.companyId) {
                   return c;
                 }
                 const avgNew =
-                  (input.criteriaRatings!.salaryTransparency +
-                    input.criteriaRatings!.environment +
-                    input.criteriaRatings!.scheduleFlexibility) /
+                  (ratings.salaryTransparency + ratings.environment + ratings.scheduleFlexibility) /
                   3;
                 const nextCount = c.reviewCount + 1;
                 const nextTrust = Number(
@@ -308,7 +307,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
     const expiresIso = new Date(now + 14 * 24 * 3600_000).toISOString();
-    let targetCompanyId = input.companyId;
+    const shouldCreateCompany = !input.companyId;
+    const resolvedCompanyId = input.companyId || `comp-shared-${now}`;
     const newJobId = `job-shared-${now}`;
 
     const shifts = input.shiftPeriods.map((period, index) => ({
@@ -322,7 +322,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       dedupeKey: `shared-${(input.companyId || input.newCompanyName || input.title)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')}`,
-      companyId: targetCompanyId || `comp-shared-${now}`,
+      companyId: resolvedCompanyId,
       title: input.title,
       hourlyWageVnd: input.hourlyWageVnd,
       payCycle: input.payCycle,
@@ -343,30 +343,27 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     };
 
     setState((prev) => {
-      let nextCompanies = prev.companies;
-      if (!targetCompanyId) {
-        const createdCompanyId = newRawJob.companyId;
-        targetCompanyId = createdCompanyId;
-        nextCompanies = [
-          ...prev.companies,
-          {
-            id: createdCompanyId,
-            name: input.newCompanyName || 'Cơ sở do sinh viên giới thiệu',
-            category: 'Cộng đồng giới thiệu',
-            address: input.address,
-            district: input.district,
-            lat: input.lat,
-            lng: input.lng,
-            trustScore: 4.5,
-            reviewCount: 1,
-            mapVerified: true,
-            businessLicenseCode: null,
-            businessLicenseVerified: false,
-            warningFlag: null,
-            photos: [],
-          },
-        ];
-      }
+      const nextCompanies = shouldCreateCompany
+        ? [
+            ...prev.companies,
+            {
+              id: resolvedCompanyId,
+              name: input.newCompanyName || 'Cơ sở do sinh viên giới thiệu',
+              category: 'Cộng đồng giới thiệu',
+              address: input.address,
+              district: input.district,
+              lat: input.lat,
+              lng: input.lng,
+              trustScore: 4.5,
+              reviewCount: 1,
+              mapVerified: true,
+              businessLicenseCode: null,
+              businessLicenseVerified: false,
+              warningFlag: null,
+              photos: [],
+            },
+          ]
+        : prev.companies;
 
       return {
         ...prev,
@@ -382,7 +379,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     notifications.show({
       title: 'Đã chia sẻ tin tuyển dụng lên Bản đồ',
       message: 'Tin đã được đưa qua bộ khử trùng lặp và gắn ghim mới trên MH-01 (+15 điểm uy tín).',
-      color: 'teal',
+      color: 'success',
     });
 
     return {
@@ -441,7 +438,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       const existing = state.threads.find(
         (t) =>
           t.peerId === input.peerId &&
-          (input.contextPostId ? t.contextPostId === input.contextPostId : true)
+          (!input.contextPostId || t.contextPostId === input.contextPostId)
       );
       if (existing) {
         return existing.id;
@@ -547,7 +544,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     notifications.show({
       title: 'Đã gửi báo cáo vi phạm',
       message: 'Cảm ơn bạn đã bảo vệ cộng đồng sinh viên (+5 điểm uy tín).',
-      color: 'amber',
+      color: 'warning',
     });
   }, []);
 

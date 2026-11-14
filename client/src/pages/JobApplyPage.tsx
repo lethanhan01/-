@@ -96,7 +96,9 @@ export function JobApplyPage() {
     return (
       <Card p="xl">
         <Stack gap="sm" align="center">
-          <Title order={3}>Không tìm thấy công việc để ứng tuyển</Title>
+          <Title order={1} size="h3">
+            Không tìm thấy công việc để ứng tuyển
+          </Title>
           <Button component={Link} to="/">
             Quay lại Bản đồ
           </Button>
@@ -148,12 +150,14 @@ export function JobApplyPage() {
           <Text size="xs" fw={700} c="brand">
             ỨNG TUYỂN CÔNG VIỆC (MH-06)
           </Text>
-          <Title order={3}>{job.title}</Title>
+          <Title order={1} size="h3">
+            {job.title}
+          </Title>
           <Group gap="md" wrap="wrap">
             <Text size="sm" fw={600}>
               {company.name}
             </Text>
-            <Badge color="teal" className="app-tabular">
+            <Badge color="success" className="app-tabular">
               {formatVnd(job.hourlyWageVnd)}/giờ
             </Badge>
             <Text size="xs" c="dimmed">
@@ -164,7 +168,7 @@ export function JobApplyPage() {
       </Card>
 
       {company.warningFlag ? (
-        <Alert color="red" icon={<IconAlertTriangle size={18} />} title="Lưu ý cảnh báo an toàn">
+        <Alert color="danger" icon={<IconAlertTriangle size={18} />} title="Lưu ý cảnh báo an toàn">
           <Text size="xs">{company.warningFlag}</Text>
         </Alert>
       ) : null}
@@ -172,7 +176,9 @@ export function JobApplyPage() {
       <Card p="md">
         <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
           <Stack gap="md">
-            <Title order={4}>1. Thông tin ứng viên (tự động điền từ MH-02)</Title>
+            <Title order={2} size="h4">
+              1. Thông tin ứng viên (tự động điền từ MH-02)
+            </Title>
 
             <Group grow>
               <TextInput
@@ -217,7 +223,9 @@ export function JobApplyPage() {
 
             <Divider />
 
-            <Title order={4}>2. Chọn ca làm & Đối chiếu lịch rảnh cá nhân</Title>
+            <Title order={2} size="h4">
+              2. Chọn ca làm & Đối chiếu lịch rảnh cá nhân
+            </Title>
             <Checkbox.Group
               label="Đánh dấu các ca làm bạn có thể đăng ký"
               withAsterisk
@@ -226,15 +234,15 @@ export function JobApplyPage() {
             >
               <Stack gap="xs" mt="xs">
                 {scheduleMatch?.shiftDetails.map(({ shift, fitsSchedule, conflicts }) => (
-                  <Card key={shift.id} p="xs" bg="var(--app-bg-canvas)">
+                  <Card key={shift.id} p="xs" bg="var(--app-bg-subtle)">
                     <Group justify="space-between" wrap="wrap">
                       <Checkbox value={shift.id} label={shift.label} />
                       {fitsSchedule ? (
-                        <Badge color="teal" leftSection={<IconCheck size={12} />}>
+                        <Badge color="success" leftSection={<IconCheck size={12} />}>
                           Khớp lịch rảnh
                         </Badge>
                       ) : (
-                        <Badge color="red">
+                        <Badge color="danger">
                           Trùng lịch học: {conflicts.slice(0, 2).join(', ')}
                         </Badge>
                       )}
@@ -246,7 +254,9 @@ export function JobApplyPage() {
 
             <Divider />
 
-            <Title order={4}>3. Lời nhắn & Hồ sơ năng lực</Title>
+            <Title order={2} size="h4">
+              3. Lời nhắn & Hồ sơ năng lực
+            </Title>
             <Textarea
               label="Lời nhắn giới thiệu bản thân với nhà tuyển dụng"
               minRows={3}
@@ -273,7 +283,7 @@ export function JobApplyPage() {
               <Button component={Link} to={`/jobs/${job.id}`} variant="default">
                 Hủy
               </Button>
-              <Button type="submit" color="teal" leftSection={<IconSend size={16} />}>
+              <Button type="submit" color="success" leftSection={<IconSend size={16} />}>
                 Gửi hồ sơ ứng tuyển
               </Button>
             </Group>

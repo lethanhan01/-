@@ -8,6 +8,7 @@ export default defineConfig({
     ...oxfmt,
     ignorePatterns: [
       ...oxfmt.ignorePatterns,
+      '.agents',
       'dist',
       'storybook-static',
       '*.html',
@@ -18,7 +19,7 @@ export default defineConfig({
   },
   lint: {
     ...oxlint,
-    ignorePatterns: ['**/*.{mjs,cjs,js,d.ts,d.mts}', 'dist', 'storybook-static'],
+    ignorePatterns: ['.agents', '**/*.{mjs,cjs,js,d.ts,d.mts}', 'dist', 'storybook-static'],
     options: { typeAware: true, typeCheck: true },
   },
   plugins: lazyPlugins(() => [

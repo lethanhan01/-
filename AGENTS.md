@@ -4,11 +4,12 @@ These rules are mandatory for every UI task in `client/`.
 
 ## 1. Verified Project Stack (`client/package.json`)
 
-- **UI Core & Hooks**: `@mantine/core` `9.8.0`, `@mantine/hooks` `9.8.0`
+- **UI Core, Hooks & Extensions**: `@mantine/core` `9.8.0`, `@mantine/hooks` `9.8.0`, `@mantine/form` `^9.8.0`, `@mantine/dropzone` `^9.8.0`, `@mantine/modals` `^9.8.0`, `@mantine/notifications` `^9.8.0`
+- **Icons & Map**: `@tabler/icons-react` `^3.51.0`, `leaflet` `^1.9.4`
 - **Framework & Routing**: `react` `^19.2.0`, `react-router-dom` `^7.9.4`
-- **Styling Toolchain**: `postcss-preset-mantine` `1.18.0`, `postcss-simple-vars` (`$mantine-breakpoint-xs`..`xl` in `client/postcss.config.cjs`), `stylelint`
+- **Styling Toolchain**: `postcss-preset-mantine` `1.18.0`, `postcss-simple-vars` (`$mantine-breakpoint-xs`..`xl` in `client/postcss.config.cjs`), `stylelint` (`stylelint-config-standard`)
 - **Build, Lint, Format & Test**: `vite-plus` (`vp`), `oxc-config-mantine`, `vitest`, `@storybook/react-vite`, `yarn@4.18.1`
-- **Not pre-installed**: `@mantine/form`, `@mantine/notifications`, `@mantine/modals`, `@mantine/dates`, `@tabler/icons-react`, `@phosphor-icons/react`. Always inspect `client/package.json` before importing an extension package; run `yarn add` in `client/` only when a feature needs it.
+- **Not pre-installed**: `@mantine/dates`, `@mantine/charts`, `@mantine/spotlight`, `@phosphor-icons/react`. Always inspect `client/package.json` before importing an extension package; run `yarn add` in `client/` only when a feature needs it.
 
 ## 2. Official Documentation Lookup Protocol
 
@@ -37,7 +38,17 @@ Never guess Mantine v9 APIs or copy deprecated v6/v7/v8 patterns. Always check:
    - Preserve semantic landmarks via polymorphic `component` (`<Box component="main"|"section"|"article"|"nav"|"header"|"footer">` or `AppShell.*`), sequential `<Title order={1..6}>`, and `aria-label` on icon-only buttons (`ActionIcon`, `CloseButton`).
    - Rare technical DOM mount containers (e.g., third-party canvas/map/chart ref) must use `<Box ref={...} />` with a 1-line comment explaining why.
 5. **No competing styling frameworks**: Do not install Tailwind CSS, `styled-components`, Emotion, or similar CSS-in-JS libraries.
-6. **No hardcoded `px` for font sizes or spacing**: Use Mantine theme scale (`xs`–`xl`), CSS variables (`--mantine-spacing-*`, `--mantine-font-size-*`, `--mantine-radius-*`), PostCSS `rem()` / `em()`, or Mantine numeric props (auto-converted to `rem`). Never hardcode string/CSS `px` for typography, padding, margin, gap, or radius (only `1px` hairline borders or fixed media dimensions are allowed).
+6. **No hardcoded `px` for font sizes or spacing**: Use Mantine theme scale (`xs`–`xl`), CSS variables (`--mantine-spacing-*`, `--mantine-font-size-*`, `--mantine-radius-*`), PostCSS `rem()` / `em()`, or Mantine numeric props (auto-converted to `rem`). Never hardcode string/CSS `px` for typography, padding, margin, gap, or radius (only `1px` hairline borders inside `*.module.css` or fixed media dimensions are allowed).
+7. **Semantic Colors & Tokens Only (Zero Arbitrary Colors)**:
+   - Color props (`color`, `c`) MUST use the semantic roles registered in `client/src/theme.ts`: `brand` (primary/interactive), `success` (verified/match/positive), `warning` (caution/urgent), `danger` (scam/error/busy), `neutral` (muted metadata), and `dimmed` (secondary text on `c`).
+   - NEVER use raw/physical color names (`teal`, `amber`, `red`, `gray`, `blue`, `pink`, `yellow`, `white`, `black`), numeric shade CSS variables (`--mantine-color-*-0..9`), hex codes (`#...`), `rgb()`/`rgba()`, or `hsl()`/`hsla()` in JSX or CSS (the only exception is defining base `MantineColorsTuple` and `virtualColor` inside `client/src/theme.ts`).
+   - CSS variables for surfaces, borders, and text MUST use Mantine semantic tokens (`--mantine-color-body`, `--mantine-color-default`, `--mantine-color-default-hover`, `--mantine-color-default-border`, `--mantine-color-text`, `--mantine-color-dimmed`, `--mantine-primary-color-filled|light|contrast`, `--mantine-color-<role>-light|filled|outline`) or `--app-bg-subtle`. Do NOT invent duplicate `--app-*` color/border variables.
+8. **No Inline Border, Radius-Shorthand, or `style` Props in JSX**:
+   - NEVER pass CSS border shorthands to `bd="..."` (e.g., `bd="1px solid ..."`), use `bdrs="..."`, or pass `style={{...}}` in JSX.
+   - Use `<Paper withBorder radius="...">` or `<Card>` for bordered surfaces, `bg="var(--app-bg-subtle)"` for nested subtle surfaces, `<Table.ScrollContainer>` for horizontal table scrolling, and `<ComponentName>.module.css` for Dropzone inner pointer-events or conditional/stateful borders (`mod={{ active, selected, focused, me }}` + `&[data-*]`).
+9. **Component CSS Isolation (`*.module.css` vs `global.css`)**:
+   - Place all component/page-specific classes, hover/focus-visible styles, and state selectors inside `<ComponentName>.module.css`.
+   - Keep `client/src/styles/global.css` strictly for app-wide rules (`body`, `.app-tabular`, `.app-main-content`, and third-party overrides like `.leaflet-popup-*`).
 
 ## 4. Testing & Verification (`client/`)
 
@@ -46,8 +57,10 @@ Never guess Mantine v9 APIs or copy deprecated v6/v7/v8 patterns. Always check:
 - After UI changes, run inside `client/`:
   - `yarn check` (typecheck + `oxlint` + `oxfmt`)
   - `yarn stylelint`
+  - `yarn ui:lint` (`scripts/check-ui-rules.mjs` — enforces semantic colors/tokens, no `bd`/`bdrs`/`style={{}}`, no raw HTML, no non-semantic `onClick`)
   - `yarn vitest`
-  - `yarn build` (or run all via `yarn test`)
+  - `yarn build` (or run the full pipeline via `yarn test`)
+  - `yarn storybook:build` when adding/modifying stories or theme setup
 
 ## 5. Project Skills (`client/.agents/skills/`)
 

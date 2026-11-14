@@ -1,0 +1,37 @@
+.threadButton {
+  display: block;
+  text-align: left;
+  border-radius: var(--mantine-radius-md);
+
+  &:focus-visible {
+    outline: rem(2px) solid var(--mantine-primary-color-filled);
+    outline-offset: rem(2px);
+  }
+}
+
+.threadCard {
+  background-color: var(--app-bg-subtle);
+  transition: border-color 150ms ease, background-color 150ms ease;
+
+  @mixin hover {
+    background-color: var(--mantine-color-default-hover);
+  }
+
+  .threadButton[data-active] & {
+    background-color: var(--mantine-primary-color-light);
+    border-color: var(--mantine-primary-color-filled);
+  }
+}
+
+.bubble {
+  background-color: var(--app-bg-subtle);
+
+  &[data-me] {
+    background-color: var(--mantine-primary-color-filled);
+    color: var(--mantine-primary-color-contrast);
+  }
+}
+
+.profileCard {
+  color: var(--mantine-color-text);
+}

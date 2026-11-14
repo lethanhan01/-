@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { Badge, Box, Group, Paper, Stack, Text, UnstyledButton } from '@mantine/core';
+import {
+  Badge,
+  Box,
+  DEFAULT_THEME,
+  Group,
+  Paper,
+  Stack,
+  Text,
+  UnstyledButton,
+  useMantineColorScheme,
+} from '@mantine/core';
 import { JOB_STATUS_META } from '../../domain/jobLogic';
 import { CanonicalJob, Company, StudentAnchorZone } from '../../domain/types';
+import { theme } from '../../theme';
+import classes from './JobLeafletMap.module.css';
 
 export interface MapJobItem {
   job: CanonicalJob;
@@ -19,12 +31,32 @@ interface JobLeafletMapProps {
   onSelectJob: (jobId: string) => void;
 }
 
-const STATUS_HEX: Record<string, string> = {
-  new: '#2454E8',
-  urgent: '#D97706',
-  updated: '#0D9488',
-  expiring: '#DC2626',
+const STATUS_CSS_VAR: Record<string, { cssVar: string; fallback: string }> = {
+  new: {
+    cssVar: '--mantine-color-brand-filled',
+    fallback: theme.colors?.brand?.[6] ?? DEFAULT_THEME.colors.blue[6],
+  },
+  urgent: {
+    cssVar: '--mantine-color-warning-filled',
+    fallback: theme.colors?.amber?.[6] ?? DEFAULT_THEME.colors.yellow[6],
+  },
+  updated: {
+    cssVar: '--mantine-color-success-filled',
+    fallback: DEFAULT_THEME.colors.teal[6],
+  },
+  expiring: {
+    cssVar: '--mantine-color-danger-filled',
+    fallback: DEFAULT_THEME.colors.red[6],
+  },
 };
+
+function resolveCssVar(cssVar: string, fallback: string): string {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+  const value = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
+  return value || fallback;
+}
 
 export function JobLeafletMap({
   center,
@@ -33,9 +65,11 @@ export function JobLeafletMap({
   selectedJobId,
   onSelectJob,
 }: JobLeafletMapProps) {
+  const { colorScheme } = useMantineColorScheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
+  const initialCenterRef = useRef(center);
   const [mapFailed, setMapFailed] = useState(false);
 
   useEffect(() => {
@@ -45,8 +79,9 @@ export function JobLeafletMap({
     }
 
     try {
+      const initialCenter = initialCenterRef.current;
       const map = L.map(el, {
-        center: [center.lat, center.lng],
+        center: [initialCenter.lat, initialCenter.lng],
         zoom: 13,
         zoomControl: true,
       });
@@ -78,15 +113,19 @@ export function JobLeafletMap({
       return;
     }
 
+    const brandColor = resolveCssVar(STATUS_CSS_VAR.new.cssVar, STATUS_CSS_VAR.new.fallback);
+    const bodyColor = resolveCssVar('--mantine-color-body', DEFAULT_THEME.white);
+    const textColor = resolveCssVar('--mantine-color-text', DEFAULT_THEME.black);
+
     map.setView([center.lat, center.lng], radiusKm && radiusKm <= 3 ? 14 : 12, { animate: true });
     group.clearLayers();
 
     // Anchor marker for the student's current area
     L.circleMarker([center.lat, center.lng], {
       radius: 8,
-      color: '#FFFFFF',
+      color: bodyColor,
       weight: 2,
-      fillColor: '#0F172A',
+      fillColor: textColor,
       fillOpacity: 1,
     })
       .bindTooltip(`Vị trí của bạn: ${center.label}`)
@@ -95,20 +134,21 @@ export function JobLeafletMap({
     if (radiusKm && radiusKm > 0) {
       L.circle([center.lat, center.lng], {
         radius: radiusKm * 1000,
-        color: '#2454E8',
+        color: brandColor,
         weight: 1.5,
         dashArray: '6 6',
-        fillColor: '#2454E8',
+        fillColor: brandColor,
         fillOpacity: 0.06,
       }).addTo(group);
     }
 
     for (const item of items) {
       const isSelected = item.job.id === selectedJobId;
-      const color = STATUS_HEX[item.job.status] ?? '#2454E8';
+      const statusToken = STATUS_CSS_VAR[item.job.status] ?? STATUS_CSS_VAR.new;
+      const color = resolveCssVar(statusToken.cssVar, statusToken.fallback);
       const marker = L.circleMarker([item.company.lat, item.company.lng], {
         radius: isSelected ? 12 : 9,
-        color: isSelected ? '#0F172A' : '#FFFFFF',
+        color: isSelected ? textColor : bodyColor,
         weight: isSelected ? 3 : 2,
         fillColor: color,
         fillOpacity: 0.95,
@@ -120,7 +160,7 @@ export function JobLeafletMap({
       marker.on('click', () => onSelectJob(item.job.id));
       marker.addTo(group);
     }
-  }, [center, radiusKm, items, selectedJobId, onSelectJob]);
+  }, [center, radiusKm, items, selectedJobId, onSelectJob, colorScheme]);
 
   if (mapFailed) {
     return (
@@ -149,7 +189,7 @@ export function JobLeafletMap({
   return (
     <Stack gap="xs">
       {/* Leaflet requires a direct DOM container node to mount interactive map tiles and markers */}
-      <Box ref={containerRef} className="app-map-container" aria-label="Bản đồ việc làm thêm" />
+      <Box ref={containerRef} className={classes.mapContainer} aria-label="Bản đồ việc làm thêm" />
       <Group gap="xs" wrap="wrap">
         {(['new', 'urgent', 'updated', 'expiring'] as const).map((statusKey) => (
           <Badge key={statusKey} size="xs" color={JOB_STATUS_META[statusKey].color} variant="dot">

@@ -12,6 +12,7 @@ import {
   TagsInput,
   Textarea,
   TextInput,
+  virtualColor,
   type MantineColorsTuple,
 } from '@mantine/core';
 
@@ -53,6 +54,10 @@ export const theme = createTheme({
   colors: {
     brand,
     amber,
+    success: virtualColor({ name: 'success', light: 'teal', dark: 'teal' }),
+    warning: virtualColor({ name: 'warning', light: 'amber', dark: 'amber' }),
+    danger: virtualColor({ name: 'danger', light: 'red', dark: 'red' }),
+    neutral: virtualColor({ name: 'neutral', light: 'gray', dark: 'gray' }),
   },
   components: {
     Card: Card.extend({
@@ -111,15 +116,9 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--app-bottom-nav-h': '4.25rem',
   },
   light: {
-    '--app-bg-canvas': '#F8FAFC',
-    '--app-bg-surface': '#FFFFFF',
-    '--app-border-subtle': '#E2E8F0',
-    '--app-text-muted': '#475569',
+    '--app-bg-subtle': 'var(--mantine-color-gray-0)',
   },
   dark: {
-    '--app-bg-canvas': '#0F172A',
-    '--app-bg-surface': '#1E293B',
-    '--app-border-subtle': '#334155',
-    '--app-text-muted': '#94A3B8',
+    '--app-bg-subtle': 'var(--mantine-color-dark-7)',
   },
 });

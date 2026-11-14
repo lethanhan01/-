@@ -32,8 +32,168 @@ import {
   haversineDistanceKm,
   JOB_STATUS_META,
 } from '../domain/jobLogic';
-import { ShiftPeriod } from '../domain/types';
+import {
+  BusyScheduleMap,
+  CanonicalJob,
+  Company,
+  ShiftPeriod,
+  StudentAnchorZone,
+} from '../domain/types';
 import { useAppState } from '../state/AppStateContext';
+import classes from './JobsMapPage.module.css';
+
+type MapJobListEntry = MapJobItem & {
+  matchingShiftCount: number;
+  totalShiftCount: number;
+};
+
+function buildFilteredJobItems(params: {
+  canonicalJobs: CanonicalJob[];
+  companyMap: Map<string, Company>;
+  anchorZone: StudentAnchorZone;
+  radiusVal: number;
+  wageVal: number;
+  trustVal: number;
+  selectedPeriods: ShiftPeriod[];
+  busySchedule: BusyScheduleMap;
+  onlyMatchingSchedule: boolean;
+}): MapJobListEntry[] {
+  const {
+    canonicalJobs,
+    companyMap,
+    anchorZone,
+    radiusVal,
+    wageVal,
+    trustVal,
+    selectedPeriods,
+    busySchedule,
+    onlyMatchingSchedule,
+  } = params;
+
+  const results: MapJobListEntry[] = [];
+
+  for (const job of canonicalJobs) {
+    const company = companyMap.get(job.companyId);
+    if (!company) {
+      continue;
+    }
+
+    const distanceKm = haversineDistanceKm(
+      anchorZone.lat,
+      anchorZone.lng,
+      company.lat,
+      company.lng
+    );
+
+    const failsNumericFilter =
+      (radiusVal > 0 && distanceKm > radiusVal) ||
+      job.hourlyWageVnd < wageVal ||
+      company.trustScore < trustVal;
+    const failsPeriodFilter =
+      selectedPeriods.length > 0 && !job.shifts.some((s) => selectedPeriods.includes(s.period));
+
+    if (failsNumericFilter || failsPeriodFilter) {
+      continue;
+    }
+
+    const scheduleMatch = computeJobScheduleMatch(job.shifts, busySchedule);
+    if (onlyMatchingSchedule && !scheduleMatch.isMatch) {
+      continue;
+    }
+
+    results.push({
+      job,
+      company,
+      distanceKm,
+      matchPercent: scheduleMatch.matchPercent,
+      matchingShiftCount: scheduleMatch.matchingCount,
+      totalShiftCount: scheduleMatch.totalCount,
+    });
+  }
+
+  results.sort((a, b) => {
+    if (b.matchPercent !== a.matchPercent) {
+      return b.matchPercent - a.matchPercent;
+    }
+    return a.distanceKm - b.distanceKm;
+  });
+
+  return results;
+}
+
+function JobListCard({
+  item,
+  isSelected,
+  onSelect,
+}: {
+  item: MapJobListEntry;
+  isSelected: boolean;
+  onSelect: (jobId: string) => void;
+}) {
+  return (
+    <Card p="sm" className={classes.selectableCard} mod={{ selected: isSelected }}>
+      <Stack gap={6}>
+        <Group justify="space-between" wrap="nowrap">
+          <Badge size="xs" color={JOB_STATUS_META[item.job.status].color}>
+            {JOB_STATUS_META[item.job.status].label}
+          </Badge>
+          <Badge
+            size="xs"
+            color={item.matchingShiftCount > 0 ? 'success' : 'danger'}
+            leftSection={<IconClockCheck size={12} />}
+          >
+            {item.matchingShiftCount}/{item.totalShiftCount} ca khớp lịch
+          </Badge>
+        </Group>
+
+        <UnstyledButton
+          onClick={() => onSelect(item.job.id)}
+          ta="left"
+          className={classes.titleButton}
+        >
+          <Text size="sm" fw={700}>
+            {item.job.title}
+          </Text>
+        </UnstyledButton>
+
+        <Group justify="space-between" wrap="wrap" gap="xs">
+          <Text size="xs" c="dimmed">
+            {item.company.name}
+          </Text>
+          <Text size="xs" fw={700} c="success" className="app-tabular">
+            {formatVnd(item.job.hourlyWageVnd)}/giờ
+          </Text>
+        </Group>
+
+        <Group justify="space-between" align="center" wrap="wrap">
+          <Group gap="xs">
+            <Badge
+              size="xs"
+              variant="outline"
+              color="neutral"
+              leftSection={<IconMapPin size={11} />}
+            >
+              {item.distanceKm.toFixed(1)} km
+            </Badge>
+            {item.job.duplicateCount > 1 ? (
+              <Badge size="xs" color="brand" variant="light">
+                Gộp {item.job.duplicateCount} nguồn
+              </Badge>
+            ) : null}
+          </Group>
+          <Button
+            component={Link}
+            to={`/jobs/${item.job.id}`}
+            size="xs"
+            variant={isSelected ? 'filled' : 'light'}
+          >
+            Chi tiết
+          </Button>
+        </Group>
+      </Stack>
+    </Card>
+  );
+}
 
 export function JobsMapPage() {
   const [searchParams] = useSearchParams();
@@ -57,79 +217,31 @@ export function JobsMapPage() {
     [state.companies]
   );
 
-  const filteredItems = useMemo(() => {
-    const radiusVal = Number(radiusKm);
-    const wageVal = Number(minWage);
-    const trustVal = Number(minTrust);
-
-    const results: (MapJobItem & {
-      matchingShiftCount: number;
-      totalShiftCount: number;
-    })[] = [];
-
-    for (const job of derived.canonicalJobs) {
-      const company = companyMap.get(job.companyId);
-      if (!company) {
-        continue;
-      }
-
-      const distanceKm = haversineDistanceKm(
-        anchorZone.lat,
-        anchorZone.lng,
-        company.lat,
-        company.lng
-      );
-
-      if (radiusVal > 0 && distanceKm > radiusVal) {
-        continue;
-      }
-      if (job.hourlyWageVnd < wageVal) {
-        continue;
-      }
-      if (company.trustScore < trustVal) {
-        continue;
-      }
-      if (
-        selectedPeriods.length > 0 &&
-        !job.shifts.some((s) => selectedPeriods.includes(s.period))
-      ) {
-        continue;
-      }
-
-      const scheduleMatch = computeJobScheduleMatch(job.shifts, state.busySchedule);
-      if (onlyMatchingSchedule && !scheduleMatch.isMatch) {
-        continue;
-      }
-
-      results.push({
-        job,
-        company,
-        distanceKm,
-        matchPercent: scheduleMatch.matchPercent,
-        matchingShiftCount: scheduleMatch.matchingCount,
-        totalShiftCount: scheduleMatch.totalCount,
-      });
-    }
-
-    results.sort((a, b) => {
-      if (b.matchPercent !== a.matchPercent) {
-        return b.matchPercent - a.matchPercent;
-      }
-      return a.distanceKm - b.distanceKm;
-    });
-
-    return results;
-  }, [
-    derived.canonicalJobs,
-    companyMap,
-    anchorZone,
-    radiusKm,
-    minWage,
-    minTrust,
-    selectedPeriods,
-    state.busySchedule,
-    onlyMatchingSchedule,
-  ]);
+  const filteredItems = useMemo(
+    () =>
+      buildFilteredJobItems({
+        canonicalJobs: derived.canonicalJobs,
+        companyMap,
+        anchorZone,
+        radiusVal: Number(radiusKm),
+        wageVal: Number(minWage),
+        trustVal: Number(minTrust),
+        selectedPeriods,
+        busySchedule: state.busySchedule,
+        onlyMatchingSchedule,
+      }),
+    [
+      derived.canonicalJobs,
+      companyMap,
+      anchorZone,
+      radiusKm,
+      minWage,
+      minTrust,
+      selectedPeriods,
+      state.busySchedule,
+      onlyMatchingSchedule,
+    ]
+  );
 
   const activeItem =
     filteredItems.find((item) => item.job.id === selectedJobId) ?? filteredItems[0] ?? null;
@@ -138,7 +250,9 @@ export function JobsMapPage() {
     <Stack gap="md">
       <Group justify="space-between" align="flex-end" wrap="wrap">
         <Stack gap={4}>
-          <Title order={2}>Bản đồ Việc làm Thêm (MH-01)</Title>
+          <Title order={1} size="h2">
+            Bản đồ Việc làm Thêm (MH-01)
+          </Title>
           <Text size="sm" c="dimmed">
             Khám phá tin tuyển dụng minh bạch quanh {anchorZone.label}, tự động khớp với lịch rảnh
             từ hồ sơ cá nhân.
@@ -155,7 +269,7 @@ export function JobsMapPage() {
         </Button>
       </Group>
 
-      <Alert color="teal" variant="light" icon={<IconSparkles size={18} />}>
+      <Alert color="success" variant="light" icon={<IconSparkles size={18} />}>
         <Group justify="space-between" wrap="wrap" gap="xs">
           <Text size="sm">
             Đang hiển thị{' '}
@@ -191,7 +305,7 @@ export function JobsMapPage() {
               label="Chỉ hiện việc khớp lịch rảnh"
               checked={onlyMatchingSchedule}
               onChange={(e) => setOnlyMatchingSchedule(e.currentTarget.checked)}
-              color="teal"
+              color="success"
             />
           </Group>
 
@@ -279,7 +393,7 @@ export function JobsMapPage() {
             />
 
             {activeItem ? (
-              <Card p="md" bd="1.5px solid var(--mantine-color-brand-5)">
+              <Card p="md" className={classes.detailCard}>
                 <Stack gap="xs">
                   <Group justify="space-between" wrap="wrap">
                     <Badge color={JOB_STATUS_META[activeItem.job.status].color}>
@@ -291,18 +405,20 @@ export function JobsMapPage() {
                           Gộp từ {activeItem.job.duplicateCount} nguồn
                         </Badge>
                       ) : null}
-                      <Badge color={activeItem.matchPercent > 0 ? 'teal' : 'gray'}>
+                      <Badge color={activeItem.matchPercent > 0 ? 'success' : 'neutral'}>
                         Khớp {activeItem.matchPercent}% lịch rảnh
                       </Badge>
                     </Group>
                   </Group>
 
-                  <Title order={4}>{activeItem.job.title}</Title>
+                  <Title order={2} size="h4">
+                    {activeItem.job.title}
+                  </Title>
                   <Text size="sm" fw={600} c="brand">
                     {activeItem.company.name}
                   </Text>
                   <Group gap="md" wrap="wrap">
-                    <Text size="sm" fw={700} c="teal" className="app-tabular">
+                    <Text size="sm" fw={700} c="success" className="app-tabular">
                       {formatVnd(activeItem.job.hourlyWageVnd)}/giờ
                     </Text>
                     <Text size="xs" c="dimmed" className="app-tabular">
@@ -337,82 +453,22 @@ export function JobsMapPage() {
         <Grid.Col span={{ base: 12, md: 5 }}>
           <Stack gap="sm">
             <Group justify="space-between">
-              <Title order={4}>Danh sách việc làm ({filteredItems.length})</Title>
+              <Title order={2} size="h4">
+                Danh sách việc làm ({filteredItems.length})
+              </Title>
               <Text size="xs" c="dimmed">
                 Sắp xếp theo độ khớp lịch rảnh
               </Text>
             </Group>
 
-            {filteredItems.map((item) => {
-              const isSelected = activeItem?.job.id === item.job.id;
-              return (
-                <Card
-                  key={item.job.id}
-                  p="sm"
-                  bd={
-                    isSelected
-                      ? '1.5px solid var(--mantine-color-brand-6)'
-                      : '1px solid var(--app-border-subtle)'
-                  }
-                >
-                  <Stack gap={6}>
-                    <Group justify="space-between" wrap="nowrap">
-                      <Badge size="xs" color={JOB_STATUS_META[item.job.status].color}>
-                        {JOB_STATUS_META[item.job.status].label}
-                      </Badge>
-                      <Badge
-                        size="xs"
-                        color={item.matchingShiftCount > 0 ? 'teal' : 'red'}
-                        leftSection={<IconClockCheck size={12} />}
-                      >
-                        {item.matchingShiftCount}/{item.totalShiftCount} ca khớp lịch
-                      </Badge>
-                    </Group>
-
-                    <UnstyledButton onClick={() => setSelectedJobId(item.job.id)} ta="left">
-                      <Text size="sm" fw={700}>
-                        {item.job.title}
-                      </Text>
-                    </UnstyledButton>
-
-                    <Group justify="space-between" wrap="wrap" gap="xs">
-                      <Text size="xs" c="dimmed">
-                        {item.company.name}
-                      </Text>
-                      <Text size="xs" fw={700} c="teal" className="app-tabular">
-                        {formatVnd(item.job.hourlyWageVnd)}/giờ
-                      </Text>
-                    </Group>
-
-                    <Group justify="space-between" align="center" wrap="wrap">
-                      <Group gap="xs">
-                        <Badge
-                          size="xs"
-                          variant="outline"
-                          color="gray"
-                          leftSection={<IconMapPin size={11} />}
-                        >
-                          {item.distanceKm.toFixed(1)} km
-                        </Badge>
-                        {item.job.duplicateCount > 1 ? (
-                          <Badge size="xs" color="brand" variant="light">
-                            Gộp {item.job.duplicateCount} nguồn
-                          </Badge>
-                        ) : null}
-                      </Group>
-                      <Button
-                        component={Link}
-                        to={`/jobs/${item.job.id}`}
-                        size="xs"
-                        variant={isSelected ? 'filled' : 'light'}
-                      >
-                        Chi tiết
-                      </Button>
-                    </Group>
-                  </Stack>
-                </Card>
-              );
-            })}
+            {filteredItems.map((item) => (
+              <JobListCard
+                key={item.job.id}
+                item={item}
+                isSelected={activeItem?.job.id === item.job.id}
+                onSelect={setSelectedJobId}
+              />
+            ))}
           </Stack>
         </Grid.Col>
       </Grid>
