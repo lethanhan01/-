@@ -76,9 +76,9 @@ export function mockLoginWithCredentials(
       ok: false,
       fieldError: {
         field: 'email',
-        message: 'Không tìm thấy tài khoản với email này (thử minhanh@hcmut.edu.vn)',
+        message: 'Không tìm thấy tài khoản với email này',
       },
-      message: 'Email chưa được đăng ký trong hệ thống mô phỏng.',
+      message: 'Email chưa được đăng ký. Vui lòng kiểm tra hoặc tạo tài khoản mới.',
     };
   }
 
@@ -87,7 +87,7 @@ export function mockLoginWithCredentials(
       ok: false,
       fieldError: {
         field: 'password',
-        message: 'Mật khẩu không chính xác (mật khẩu mẫu là 123456)',
+        message: 'Mật khẩu không chính xác',
       },
       message: 'Sai mật khẩu đăng nhập.',
     };

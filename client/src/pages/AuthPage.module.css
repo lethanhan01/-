@@ -1,5 +1,7 @@
 .pageRoot {
+  min-height: 100dvh;
+  justify-content: center;
   max-width: rem(520px);
   margin-inline: auto;
-  padding-block: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md);
 }

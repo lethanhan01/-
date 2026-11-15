@@ -1,6 +1,5 @@
 import {
   IconAward,
-  IconLogin,
   IconLogout,
   IconMapPin,
   IconMessageCircle,
@@ -11,7 +10,7 @@ import {
   IconUser,
   IconUsers,
 } from '@tabler/icons-react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ActionIcon,
   AppShell,
@@ -39,27 +38,25 @@ const NAV_ITEMS = [
   { label: 'Mạng xã hội & Đánh giá', shortLabel: 'Cộng đồng', to: '/community', icon: IconUsers },
   { label: 'Nhắn tin Cộng đồng', shortLabel: 'Nhắn tin', to: '/messages', icon: IconMessageCircle },
   { label: 'Hồ sơ & Lịch rảnh', shortLabel: 'Hồ sơ', to: '/profile', icon: IconUser },
-  { label: 'Đăng nhập / Đăng ký', shortLabel: 'Tài khoản', to: '/auth', icon: IconLogin },
 ] as const;
 
 export function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const { state, derived, actions } = useAppState();
-  const { currentUser, isAuthenticated, logout } = useAuthMock();
+  const { currentUser, logout } = useAuthMock();
 
   const isRouteActive = (to: string) => {
     if (to === '/') {
       return location.pathname === '/' || location.pathname.startsWith('/jobs');
     }
-    if (to === '/auth') {
-      return (
-        location.pathname.startsWith('/auth') ||
-        location.pathname.startsWith('/login') ||
-        location.pathname.startsWith('/register')
-      );
-    }
     return location.pathname.startsWith(to);
+  };
+
+  const handleLogout = () => {
+    logout();
+    void navigate('/login', { replace: true });
   };
 
   const handleResetDemo = () => {
@@ -192,37 +189,23 @@ export function AppLayout() {
                 {currentUser ? currentUser.university : state.profile.university}
               </Text>
               <Group gap="xs" mt={4}>
-                <Badge size="xs" color={isAuthenticated ? 'success' : 'neutral'}>
-                  {isAuthenticated ? 'Đã đăng nhập' : 'Chế độ xem mẫu'}
+                <Badge size="xs" color="success">
+                  Đã đăng nhập
                 </Badge>
                 <Badge size="xs" color="brand">
                   {state.profile.reputationPoints}đ uy tín
                 </Badge>
               </Group>
-              {isAuthenticated ? (
-                <Button
-                  size="xs"
-                  variant="subtle"
-                  color="danger"
-                  mt={4}
-                  leftSection={<IconLogout size={13} />}
-                  onClick={logout}
-                >
-                  Đăng xuất
-                </Button>
-              ) : (
-                <Button
-                  component={Link}
-                  to="/auth"
-                  size="xs"
-                  variant="light"
-                  color="brand"
-                  mt={4}
-                  leftSection={<IconLogin size={13} />}
-                >
-                  Đăng nhập / Đăng ký
-                </Button>
-              )}
+              <Button
+                size="xs"
+                variant="subtle"
+                color="danger"
+                mt={4}
+                leftSection={<IconLogout size={13} />}
+                onClick={handleLogout}
+              >
+                Đăng xuất
+              </Button>
             </Stack>
           </Paper>
         </Stack>
@@ -268,6 +251,19 @@ export function AppLayout() {
               </UnstyledButton>
             );
           })}
+          <UnstyledButton
+            type="button"
+            onClick={handleLogout}
+            h="100%"
+            className={classes.mobileNavItem}
+          >
+            <Stack align="center" justify="center" gap={2} h="100%">
+              <IconLogout size={20} />
+              <Text size="xs" c="dimmed">
+                Đăng xuất
+              </Text>
+            </Stack>
+          </UnstyledButton>
         </Group>
       </Box>
     </AppShell>
