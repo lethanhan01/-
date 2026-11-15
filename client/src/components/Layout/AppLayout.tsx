@@ -43,8 +43,8 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const { state, derived, actions } = useAppState();
-  const { currentUser, isAuthenticated, logout } = useAuthMock();
+  const { state, actions } = useAppState();
+  const { currentUser, logout } = useAuthMock();
 
   const isRouteActive = (to: string) => {
     if (to === '/') {
