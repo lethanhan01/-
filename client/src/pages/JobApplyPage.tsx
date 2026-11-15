@@ -100,7 +100,7 @@ export function JobApplyPage() {
             Không tìm thấy công việc để ứng tuyển
           </Title>
           <Button component={Link} to="/">
-            Quay lại Bản đồ
+            Bản đồ
           </Button>
         </Stack>
       </Card>

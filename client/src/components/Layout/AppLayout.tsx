@@ -34,7 +34,7 @@ import classes from './AppLayout.module.css';
 const NAV_ITEMS = [
   { label: 'Bản đồ việc làm', shortLabel: 'Bản đồ', to: '/', icon: IconMapPin },
   { label: 'Mạng xã hội & Đánh giá', shortLabel: 'Cộng đồng', to: '/community', icon: IconUsers },
-  { label: 'Nhắn tin Cộng đồng', shortLabel: 'Nhắn tin', to: '/messages', icon: IconMessageCircle },
+  //{ label: 'Nhắn tin Cộng đồng', shortLabel: 'Nhắn tin', to: '/messages', icon: IconMessageCircle },
   { label: 'Hồ sơ & Lịch rảnh', shortLabel: 'Hồ sơ', to: '/profile', icon: IconUser },
 ] as const;
 

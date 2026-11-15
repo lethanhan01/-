@@ -53,15 +53,9 @@ export function ReportModal({ opened, onClose, companyId, companyName, jobId }: 
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Báo cáo dấu hiệu lừa đảo & vi phạm (CS-01)">
+    <Modal opened={opened} onClose={onClose} title="Báo cáo công việc này">
       <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
         <Stack gap="md">
-          <Alert color="danger" icon={<IconAlertTriangle size={18} />} title={companyName}>
-            <Text size="xs">
-              Báo cáo của bạn sẽ được gắn cảnh báo minh bạch cho sinh viên khác và gửi tới ban quản
-              trị xử lý.
-            </Text>
-          </Alert>
 
           <Checkbox.Group
             label="Chọn dấu hiệu vi phạm bạn gặp phải"
