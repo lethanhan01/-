@@ -26,3 +26,8 @@ class ResizeObserver {
 }
 
 window.ResizeObserver = ResizeObserver;
+
+if (typeof window.URL !== 'undefined') {
+  window.URL.createObjectURL = vi.fn(() => 'blob:mock');
+  window.URL.revokeObjectURL = vi.fn();
+}

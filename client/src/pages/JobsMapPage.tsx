@@ -10,12 +10,14 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   ActionIcon,
   Badge,
+  Box,
   Button,
   Card,
   Chip,
   Grid,
   Group,
   Popover,
+  ScrollArea,
   Select,
   Stack,
   Switch,
@@ -25,7 +27,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { JobLeafletMap, MapJobItem } from '../components/Map/JobLeafletMap';
+import { JobOpenMap, MapJobItem } from '../components/Map/JobOpenMap';
 import { TrustBadge } from '../components/TrustBadge/TrustBadge';
 import { ANCHOR_ZONES } from '../data/seedData';
 import {
@@ -127,11 +129,11 @@ function JobListCard({
   item,
   isSelected,
   onSelect,
-}: {
+}: Readonly<{
   item: MapJobListEntry;
   isSelected: boolean;
   onSelect: (jobId: string) => void;
-}) {
+}>) {
   return (
     <Card p="sm" className={classes.selectableCard} mod={{ selected: isSelected }}>
       <Stack gap={6}>
@@ -250,214 +252,227 @@ export function JobsMapPage() {
     filteredItems.find((item) => item.job.id === selectedJobId) ?? filteredItems[0] ?? null;
 
   return (
-    <Stack gap="md">
-      <Group justify="flex-end" gap="xs">
-        <Popover
-          opened={filtersOpened}
-          onChange={(opened) => {
-            if (opened !== filtersOpened) {
-              toggleFilters();
-            }
-          }}
-          width={420}
-          position="bottom-end"
-          withArrow
-          trapFocus
-          shadow="md"
-        >
-          <Popover.Target>
-            <ActionIcon
-              variant="light"
-              color="brand"
-              aria-label={filtersOpened ? 'Đóng bộ lọc' : 'Mở bộ lọc'}
-              aria-expanded={filtersOpened}
-              onClick={toggleFilters}
-            >
-              <IconFilter size={17} />
-            </ActionIcon>
-          </Popover.Target>
-          <Popover.Dropdown>
-            <Stack gap="sm">
-              <Switch
-                label="Chỉ hiện việc khớp lịch rảnh"
-                checked={onlyMatchingSchedule}
-                onChange={(e) => setOnlyMatchingSchedule(e.currentTarget.checked)}
-                color="success"
-              />
+    <Grid gap="md">
+      <Grid.Col span={{ base: 12, md: 7 }}>
+        <Box className={classes.leftPanel}>
+          <JobOpenMap
+            center={anchorZone}
+            radiusKm={Number(radiusKm) > 0 ? Number(radiusKm) : null}
+            items={filteredItems}
+            selectedJobId={activeItem?.job.id ?? null}
+            onSelectJob={(jobId) => setSelectedJobId(jobId)}
+          />
+        </Box>
+      </Grid.Col>
 
-              <Grid gap="sm">
-                <Grid.Col span={{ base: 12, sm: 4 }}>
-                  <Select
-                    label="Bán kính quanh khu vực"
-                    value={radiusKm}
-                    onChange={(v) => setRadiusKm(v ?? '0')}
-                    data={[
-                      { value: '2', label: 'Trong vòng 2 km' },
-                      { value: '5', label: 'Trong vòng 5 km' },
-                      { value: '10', label: 'Trong vòng 10 km' },
-                      { value: '0', label: 'Toàn TP.HCM' },
-                    ]}
-                    allowDeselect={false}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 4 }}>
-                  <Select
-                    label="Mức lương tối thiểu"
-                    value={minWage}
-                    onChange={(v) => setMinWage(v ?? '0')}
-                    data={[
-                      { value: '0', label: 'Tất cả mức lương' },
-                      { value: '25000', label: 'Từ 25.000đ/giờ' },
-                      { value: '30000', label: 'Từ 30.000đ/giờ' },
-                      { value: '40000', label: 'Từ 40.000đ/giờ' },
-                    ]}
-                    allowDeselect={false}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 4 }}>
-                  <Select
-                    label="Điểm uy tín cơ sở"
-                    value={minTrust}
-                    onChange={(v) => setMinTrust(v ?? '0')}
-                    data={[
-                      { value: '0', label: 'Tất cả (bao gồm tin cảnh báo)' },
-                      { value: '3.5', label: 'Từ 3.5 ★ trở lên' },
-                      { value: '4.5', label: 'Từ 4.5 ★ (Uy tín cao)' },
-                    ]}
-                    allowDeselect={false}
-                  />
-                </Grid.Col>
-              </Grid>
-
-              <Group gap="xs" align="center" wrap="wrap">
-                <Text size="xs" fw={600} c="dimmed">
-                  Ca làm việc:
-                </Text>
-                <Chip.Group
-                  multiple
-                  value={selectedPeriods}
-                  onChange={(vals) => setSelectedPeriods(vals as ShiftPeriod[])}
-                >
+      <Grid.Col span={{ base: 12, md: 5 }}>
+        <Stack gap="sm" className={classes.rightPanel}>
+          {activeItem ? (
+            <Card p="sm" className={classes.detailCard}>
+              <Stack gap={6}>
+                <Group justify="space-between" wrap="wrap" gap="xs">
+                  <Badge size="xs" color={JOB_STATUS_META[activeItem.job.status].color}>
+                    {JOB_STATUS_META[activeItem.job.status].label}
+                  </Badge>
                   <Group gap="xs">
-                    <Chip value="morning" size="xs">
-                      Ca Sáng
-                    </Chip>
-                    <Chip value="afternoon" size="xs">
-                      Ca Chiều
-                    </Chip>
-                    <Chip value="evening" size="xs">
-                      Ca Tối
-                    </Chip>
-                    <Chip value="weekend" size="xs">
-                      Cuối tuần
-                    </Chip>
-                  </Group>
-                </Chip.Group>
-              </Group>
-            </Stack>
-          </Popover.Dropdown>
-        </Popover>
-
-        <Tooltip label="Đồng bộ trạng thái thời gian thực">
-          <ActionIcon
-            variant="light"
-            color="brand"
-            aria-label="Đồng bộ trạng thái thời gian thực"
-            onClick={actions.simulateRealtimeTick}
-          >
-            <IconRefresh size={17} />
-          </ActionIcon>
-        </Tooltip>
-      </Group>
-
-      <Grid gap="md">
-        <Grid.Col span={{ base: 12, md: 7 }}>
-          <Stack gap="md">
-            <JobLeafletMap
-              center={anchorZone}
-              radiusKm={Number(radiusKm) > 0 ? Number(radiusKm) : null}
-              items={filteredItems}
-              selectedJobId={activeItem?.job.id ?? null}
-              onSelectJob={(jobId) => setSelectedJobId(jobId)}
-            />
-
-            {activeItem ? (
-              <Card p="md" className={classes.detailCard}>
-                <Stack gap="xs">
-                  <Group justify="space-between" wrap="wrap">
-                    <Badge color={JOB_STATUS_META[activeItem.job.status].color}>
-                      {JOB_STATUS_META[activeItem.job.status].label}
-                    </Badge>
-                    <Group gap="xs">
-                      {activeItem.job.duplicateCount > 1 ? (
-                        <Badge color="brand" variant="outline">
-                          Gộp từ {activeItem.job.duplicateCount} nguồn
-                        </Badge>
-                      ) : null}
-                      <Badge color={activeItem.matchPercent > 0 ? 'success' : 'neutral'}>
-                        Khớp {activeItem.matchPercent}% lịch rảnh
+                    {activeItem.job.duplicateCount > 1 ? (
+                      <Badge size="xs" color="brand" variant="outline">
+                        Gộp từ {activeItem.job.duplicateCount} nguồn
                       </Badge>
-                    </Group>
+                    ) : null}
+                    <Badge size="xs" color={activeItem.matchPercent > 0 ? 'success' : 'neutral'}>
+                      Khớp {activeItem.matchPercent}% lịch rảnh
+                    </Badge>
                   </Group>
+                </Group>
 
-                  <Title order={2} size="h4">
-                    {activeItem.job.title}
-                  </Title>
-                  <Text size="sm" fw={600} c="brand">
-                    {activeItem.company.name}
-                  </Text>
-                  <Group gap="md" wrap="wrap">
-                    <Text size="sm" fw={700} c="success" className="app-tabular">
-                      {formatVnd(activeItem.job.hourlyWageVnd)}/giờ
-                    </Text>
-                    <Text size="xs" c="dimmed" className="app-tabular">
-                      Cách {activeItem.distanceKm.toFixed(1)} km • {activeItem.company.address}
-                    </Text>
-                  </Group>
+                <Title order={2} size="h5" lineClamp={1}>
+                  {activeItem.job.title}
+                </Title>
 
-                  <TrustBadge company={activeItem.company} compact />
-
-                  <Group justify="flex-end" mt="xs">
-                    <Button
-                      component={Link}
-                      to={`/jobs/${activeItem.job.id}`}
-                      rightSection={<IconArrowRight size={16} />}
-                    >
-                      Xem chi tiết công việc & công ty
-                    </Button>
-                  </Group>
-                </Stack>
-              </Card>
-            ) : (
-              <Card p="lg">
-                <Text size="sm" c="dimmed" ta="center">
-                  Không có công việc nào khớp bộ lọc hiện tại. Hãy nới rộng bán kính hoặc tắt bớt
-                  điều kiện lọc.
+                <Text size="xs" fw={600} c="brand" lineClamp={1}>
+                  {activeItem.company.name}
                 </Text>
-              </Card>
-            )}
-          </Stack>
-        </Grid.Col>
 
-        <Grid.Col span={{ base: 12, md: 5 }}>
-          <Stack gap="sm">
-            <Group justify="space-between">
-              <Title order={2} size="h4">
-                Danh sách việc làm ({filteredItems.length})
-              </Title>
+                <Group gap="xs" wrap="nowrap">
+                  <Text size="xs" fw={700} c="success" className="app-tabular">
+                    {formatVnd(activeItem.job.hourlyWageVnd)}/giờ
+                  </Text>
+                  <Text size="xs" c="dimmed" className="app-tabular" lineClamp={1}>
+                    • Cách {activeItem.distanceKm.toFixed(1)} km • {activeItem.company.address}
+                  </Text>
+                </Group>
+
+                <Group justify="space-between" align="center" wrap="wrap" gap="xs">
+                  <TrustBadge company={activeItem.company} compact />
+                  <Button
+                    component={Link}
+                    to={`/jobs/${activeItem.job.id}`}
+                    size="xs"
+                    rightSection={<IconArrowRight size={14} />}
+                  >
+                    Chi tiết
+                  </Button>
+                </Group>
+              </Stack>
+            </Card>
+          ) : (
+            <Card p="sm">
+              <Text size="xs" c="dimmed" ta="center">
+                Không có công việc nào khớp bộ lọc hiện tại. Hãy nới rộng bán kính hoặc tắt bớt điều
+                kiện lọc.
+              </Text>
+            </Card>
+          )}
+
+          <Group
+            justify="space-between"
+            align="center"
+            wrap="nowrap"
+            gap="xs"
+            className={classes.listHeader}
+          >
+            <Title order={2} size="h4">
+              Danh sách việc làm ({filteredItems.length})
+            </Title>
+
+            <Group gap="xs" wrap="nowrap">
+              <Popover
+                opened={filtersOpened}
+                onChange={(opened) => {
+                  if (opened !== filtersOpened) {
+                    toggleFilters();
+                  }
+                }}
+                width={420}
+                position="bottom-end"
+                withArrow
+                trapFocus
+                shadow="md"
+              >
+                <Popover.Target>
+                  <ActionIcon
+                    variant="light"
+                    color="brand"
+                    aria-label={filtersOpened ? 'Đóng bộ lọc' : 'Mở bộ lọc'}
+                    aria-expanded={filtersOpened}
+                    onClick={toggleFilters}
+                  >
+                    <IconFilter size={17} />
+                  </ActionIcon>
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <Stack gap="sm">
+                    <Switch
+                      label="Chỉ hiện việc khớp lịch rảnh"
+                      checked={onlyMatchingSchedule}
+                      onChange={(e) => setOnlyMatchingSchedule(e.currentTarget.checked)}
+                      color="success"
+                    />
+
+                    <Grid gap="sm">
+                      <Grid.Col span={{ base: 12, sm: 4 }}>
+                        <Select
+                          label="Bán kính quanh khu vực"
+                          value={radiusKm}
+                          onChange={(v) => setRadiusKm(v ?? '0')}
+                          data={[
+                            { value: '2', label: 'Trong vòng 2 km' },
+                            { value: '5', label: 'Trong vòng 5 km' },
+                            { value: '10', label: 'Trong vòng 10 km' },
+                            { value: '0', label: 'Toàn khu vực Hà Nội' },
+                          ]}
+                          allowDeselect={false}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={{ base: 12, sm: 4 }}>
+                        <Select
+                          label="Mức lương tối thiểu"
+                          value={minWage}
+                          onChange={(v) => setMinWage(v ?? '0')}
+                          data={[
+                            { value: '0', label: 'Tất cả mức lương' },
+                            { value: '25000', label: 'Từ 25.000đ/giờ' },
+                            { value: '30000', label: 'Từ 30.000đ/giờ' },
+                            { value: '40000', label: 'Từ 40.000đ/giờ' },
+                          ]}
+                          allowDeselect={false}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={{ base: 12, sm: 4 }}>
+                        <Select
+                          label="Điểm uy tín cơ sở"
+                          value={minTrust}
+                          onChange={(v) => setMinTrust(v ?? '0')}
+                          data={[
+                            {
+                              value: '0',
+                              label: 'Tất cả (bao gồm tin cảnh báo)',
+                            },
+                            { value: '3.5', label: 'Từ 3.5 ★ trở lên' },
+                            { value: '4.5', label: 'Từ 4.5 ★ (Uy tín cao)' },
+                          ]}
+                          allowDeselect={false}
+                        />
+                      </Grid.Col>
+                    </Grid>
+
+                    <Group gap="xs" align="center" wrap="wrap">
+                      <Text size="xs" fw={600} c="dimmed">
+                        Ca làm việc:
+                      </Text>
+                      <Chip.Group
+                        multiple
+                        value={selectedPeriods}
+                        onChange={(vals) => setSelectedPeriods(vals as ShiftPeriod[])}
+                      >
+                        <Group gap="xs">
+                          <Chip value="morning" size="xs">
+                            Ca Sáng
+                          </Chip>
+                          <Chip value="afternoon" size="xs">
+                            Ca Chiều
+                          </Chip>
+                          <Chip value="evening" size="xs">
+                            Ca Tối
+                          </Chip>
+                          <Chip value="weekend" size="xs">
+                            Cuối tuần
+                          </Chip>
+                        </Group>
+                      </Chip.Group>
+                    </Group>
+                  </Stack>
+                </Popover.Dropdown>
+              </Popover>
+
+              <Tooltip label="Đồng bộ trạng thái thời gian thực">
+                <ActionIcon
+                  variant="light"
+                  color="brand"
+                  aria-label="Đồng bộ trạng thái thời gian thực"
+                  onClick={actions.simulateRealtimeTick}
+                >
+                  <IconRefresh size={17} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
+          </Group>
 
-            {filteredItems.map((item) => (
-              <JobListCard
-                key={item.job.id}
-                item={item}
-                isSelected={activeItem?.job.id === item.job.id}
-                onSelect={setSelectedJobId}
-              />
-            ))}
-          </Stack>
-        </Grid.Col>
-      </Grid>
-    </Stack>
+          <ScrollArea className={classes.jobListScroll} type="auto" offsetScrollbars="y">
+            <Stack gap="sm">
+              {filteredItems.map((item) => (
+                <JobListCard
+                  key={item.job.id}
+                  item={item}
+                  isSelected={activeItem?.job.id === item.job.id}
+                  onSelect={setSelectedJobId}
+                />
+              ))}
+            </Stack>
+          </ScrollArea>
+        </Stack>
+      </Grid.Col>
+    </Grid>
   );
 }

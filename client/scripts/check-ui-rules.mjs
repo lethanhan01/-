@@ -3,13 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..', 'src');
-const ALLOWED_GLOBAL_SELECTORS = new Set([
-  'body',
-  '.app-tabular',
-  '.app-main-content',
-  '.leaflet-popup-content-wrapper',
-  '.leaflet-popup-tip',
-]);
+const ALLOWED_GLOBAL_SELECTORS = new Set(['body', '.app-tabular', '.app-main-content']);
 
 const LEGACY_APP_VAR_RE = /--app-(?:border-subtle|bg-canvas|bg-surface|text-muted)\b/g;
 const NUMERIC_SHADE_RE = /--mantine-color-[a-z-]+-\d\b/g;

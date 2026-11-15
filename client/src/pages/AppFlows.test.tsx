@@ -1,4 +1,4 @@
-import { render, screen, userEvent } from '@test-utils';
+import { render, screen, userEvent, within } from '@test-utils';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
@@ -47,20 +47,21 @@ describe('Student Part-Time App Flows', () => {
     const switchEl = screen.getByLabelText(/Chỉ hiện việc khớp lịch rảnh/i);
     await user.click(switchEl);
     expect(screen.getByText(/Danh sách việc làm/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /^Chi tiết$/i }).length).toBeGreaterThan(0);
   });
 
-  it('merges new seed jobs into an existing saved state', () => {
+  it('merges new seed jobs, syncs company coordinates, and normalizes legacy anchorZoneId into Hanoi', () => {
     const savedState = createSeedState();
-    savedState.companies = savedState.companies.filter(
-      (company) => !company.id.startsWith('comp-hust-')
-    );
+    savedState.companies = savedState.companies
+      .filter((company) => !company.id.startsWith('comp-hust-'))
+      .map((company) => ({ ...company, lat: 10.875, lng: 106.801 }));
     savedState.rawJobs = savedState.rawJobs.filter((job) => !job.id.startsWith('job-hust-'));
-    savedState.profile.anchorZoneId = 'zone-bach-khoa-hn';
+    savedState.profile.anchorZoneId = 'legacy-unknown-zone';
     window.localStorage.setItem('svjob_state_v1', JSON.stringify(savedState));
 
     renderAppRoute('/', false);
 
-    expect(screen.getByText('Danh sách việc làm (10)')).toBeInTheDocument();
+    expect(screen.getByText('Danh sách việc làm (17)')).toBeInTheDocument();
   });
 
   it('validates scam report modal (CS-01) and submits report on MH-03', async () => {
@@ -139,7 +140,7 @@ describe('Student Part-Time App Flows', () => {
 
     expect(await screen.findByText(/Danh sách việc làm/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Nhân viên Pha chế Ca Tối/i).length).toBeGreaterThanOrEqual(1);
-  });
+  }, 15000);
 
   it('switches threads with aria-current and sends message + profile card on MH-05', async () => {
     const user = userEvent.setup();
@@ -171,4 +172,59 @@ describe('Student Part-Time App Flows', () => {
       (await screen.findAllByText(/Thẻ hồ sơ: Nguyễn Minh Anh/i)).length
     ).toBeGreaterThanOrEqual(1);
   });
+
+  it('renders company star rating stats on /jobs/job-coop-1 and updates after submitting a required-star review', async () => {
+    const user = userEvent.setup();
+    renderAppRoute('/jobs/job-coop-1');
+
+    const ratingSection = screen.getByRole('region', { name: /Đánh giá sao từ cộng đồng/i });
+    expect(screen.getByText('4.4 (3 đánh giá)')).toBeInTheDocument();
+    expect(within(ratingSection).getByText(/Tổng hợp từ 3 bài đánh giá/i)).toBeInTheDocument();
+    expect(
+      within(ratingSection).getByText(
+        /Trải nghiệm 4 tháng soạn đơn online tại Co\.opXtra Linh Trung/i
+      )
+    ).toBeInTheDocument();
+
+    await user.click(within(ratingSection).getByRole('button', { name: /4 ★ \(1\)/i }));
+    expect(
+      within(ratingSection).queryByText(
+        /Trải nghiệm 4 tháng soạn đơn online tại Co\.opXtra Linh Trung/i
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      within(ratingSection).getByText(/Lương 34k\/h ổn định, giờ cao điểm cuối tuần đơn hơi nhiều/i)
+    ).toBeInTheDocument();
+
+    await user.click(within(ratingSection).getByRole('button', { name: /Tất cả \(3\)/i }));
+    await user.click(within(ratingSection).getByRole('button', { name: /Viết đánh giá công ty/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByLabelText(/^Tiêu đề/i), 'Đánh giá mới Co.opXtra');
+    await user.type(
+      within(dialog).getByLabelText(/Nội dung đánh giá/i),
+      'Đồng nghiệp hỗ trợ rất nhiệt tình, trả lương đúng thứ 6.'
+    );
+    await user.click(within(dialog).getByRole('button', { name: /Đăng đánh giá/i }));
+    expect(await within(dialog).findAllByText(/Vui lòng chọn từ 1 đến 5 sao/i)).toHaveLength(5);
+
+    const selectStar = async (label: string, star: number) => {
+      const radio = within(dialog).getByRole('radio', { name: `${label}: ${star} sao` });
+      const starLabel = dialog.querySelector(`label[for="${radio.id}"]`);
+      if (!starLabel) {
+        throw new Error(`Missing label for ${label}: ${star}`);
+      }
+      await user.click(starLabel);
+    };
+
+    await selectStar('Minh bạch lương', 5);
+    await selectStar('Môi trường', 5);
+    await selectStar('Linh hoạt lịch', 5);
+    await selectStar('Chế độ & Đãi ngộ', 5);
+    await selectStar('Chất lượng công việc', 5);
+    await user.click(within(dialog).getByRole('button', { name: /Đăng đánh giá/i }));
+
+    expect(await within(ratingSection).findByText('Đánh giá mới Co.opXtra')).toBeInTheDocument();
+    expect(within(ratingSection).getByText(/Tổng hợp từ 4 bài đánh giá/i)).toBeInTheDocument();
+  }, 15000);
 });

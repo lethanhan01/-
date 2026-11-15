@@ -16,3 +16,28 @@
     color: var(--mantine-primary-color-filled);
   }
 }
+
+.navLinkRoot {
+  border-radius: var(--mantine-radius-md);
+
+  &[data-collapsed] {
+    justify-content: center;
+    padding-inline: var(--mantine-spacing-xs);
+
+    .navLinkSection {
+      margin-inline-end: 0;
+    }
+
+    .navLinkBody {
+      display: none;
+    }
+  }
+}
+
+.navLinkSection {
+  flex-shrink: 0;
+}
+
+.navLinkBody {
+  min-width: 0;
+}

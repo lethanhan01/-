@@ -1,6 +1,9 @@
 import {
   BusyScheduleMap,
   CanonicalJob,
+  CommunityPost,
+  Company,
+  CriteriaRatings,
   HOUR_SLOTS,
   JobShift,
   JobStatus,
@@ -182,4 +185,131 @@ export function haversineDistanceKm(
 
 export function formatVnd(amount: number): string {
   return `${amount.toLocaleString('vi-VN')}đ`;
+}
+
+export type CriteriaRatingKey = keyof CriteriaRatings;
+
+export const CRITERIA_RATING_ITEMS: { key: CriteriaRatingKey; label: string }[] = [
+  { key: 'salaryTransparency', label: 'Minh bạch lương' },
+  { key: 'environment', label: 'Môi trường' },
+  { key: 'scheduleFlexibility', label: 'Linh hoạt lịch' },
+  { key: 'benefits', label: 'Chế độ & Đãi ngộ' },
+  { key: 'jobQuality', label: 'Chất lượng công việc' },
+];
+
+export type StarBucket = 5 | 4 | 3 | 2 | 1;
+
+export interface RatingDistributionItem {
+  stars: StarBucket;
+  count: number;
+  percent: number;
+}
+
+export interface CriteriaAverageItem {
+  key: CriteriaRatingKey;
+  label: string;
+  average: number;
+  count: number;
+}
+
+export interface CompanyRatingStats {
+  reviewCount: number;
+  averageRating: number;
+  distribution: RatingDistributionItem[];
+  criteriaAverages: CriteriaAverageItem[];
+  reviewPosts: CommunityPost[];
+}
+
+export function computePostOverallRating(ratings: CriteriaRatings): number {
+  const values = CRITERIA_RATING_ITEMS.map(({ key }) => ratings[key]).filter(
+    (v): v is number => typeof v === 'number' && v > 0
+  );
+  if (values.length === 0) {
+    return 0;
+  }
+  const sum = values.reduce((acc, v) => acc + v, 0);
+  return Number((sum / values.length).toFixed(1));
+}
+
+export function computeCompanyRatingStats(
+  companyId: string,
+  posts: CommunityPost[]
+): CompanyRatingStats {
+  const reviewPosts = posts
+    .filter(
+      (post) =>
+        post.companyId === companyId && post.type === 'review' && Boolean(post.criteriaRatings)
+    )
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+
+  const reviewCount = reviewPosts.length;
+  const bucketCounts: Record<StarBucket, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  const criteriaSums: Record<CriteriaRatingKey, { sum: number; count: number }> = {
+    salaryTransparency: { sum: 0, count: 0 },
+    environment: { sum: 0, count: 0 },
+    scheduleFlexibility: { sum: 0, count: 0 },
+    benefits: { sum: 0, count: 0 },
+    jobQuality: { sum: 0, count: 0 },
+  };
+
+  let overallSum = 0;
+
+  for (const post of reviewPosts) {
+    const ratings = post.criteriaRatings;
+    if (!ratings) {
+      continue;
+    }
+    const overall = computePostOverallRating(ratings);
+    overallSum += overall;
+    const bucket = Math.min(5, Math.max(1, Math.round(overall))) as StarBucket;
+    bucketCounts[bucket] += 1;
+
+    for (const { key } of CRITERIA_RATING_ITEMS) {
+      const value = ratings[key];
+      if (typeof value === 'number' && value > 0) {
+        criteriaSums[key].sum += value;
+        criteriaSums[key].count += 1;
+      }
+    }
+  }
+
+  const averageRating = reviewCount > 0 ? Number((overallSum / reviewCount).toFixed(1)) : 0;
+  const distribution: RatingDistributionItem[] = ([5, 4, 3, 2, 1] as const).map((stars) => ({
+    stars,
+    count: bucketCounts[stars],
+    percent: reviewCount > 0 ? Math.round((bucketCounts[stars] / reviewCount) * 100) : 0,
+  }));
+
+  const criteriaAverages: CriteriaAverageItem[] = CRITERIA_RATING_ITEMS.map(({ key, label }) => {
+    const entry = criteriaSums[key];
+    return {
+      key,
+      label,
+      average: entry.count > 0 ? Number((entry.sum / entry.count).toFixed(1)) : 0,
+      count: entry.count,
+    };
+  });
+
+  return {
+    reviewCount,
+    averageRating,
+    distribution,
+    criteriaAverages,
+    reviewPosts,
+  };
+}
+
+export function syncCompaniesWithPosts(companies: Company[], posts: CommunityPost[]): Company[] {
+  return companies.map((company) => {
+    const stats = computeCompanyRatingStats(company.id, posts);
+    if (stats.reviewCount === 0) {
+      // shortcut: companies without seed reviews keep their baseline score until the first review is posted.
+      return company;
+    }
+    return {
+      ...company,
+      trustScore: stats.averageRating,
+      reviewCount: stats.reviewCount,
+    };
+  });
 }

@@ -133,3 +133,5 @@ dist
 .vitest/
 .vercel
 client/.aider-desk/skills/*
+
+client/storybook-static/*

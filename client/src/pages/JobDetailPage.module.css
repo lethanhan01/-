@@ -19,3 +19,19 @@
     background-color: var(--mantine-color-default-hover);
   }
 }
+
+.evidenceThumbButton {
+  display: block;
+  border-radius: var(--mantine-radius-sm);
+
+  &:focus-visible {
+    outline: rem(2px) solid var(--mantine-primary-color-filled);
+    outline-offset: rem(2px);
+  }
+}
+
+.ratingHeroScore {
+  font-size: rem(34px);
+  font-weight: 800;
+  line-height: 1;
+}

@@ -1,7 +1,11 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react';
 import { notifications } from '@mantine/notifications';
-import { createSeedState } from '../data/seedData';
-import { deduplicateAndFilterJobs, DeduplicateResult } from '../domain/jobLogic';
+import { ANCHOR_ZONES, createSeedState } from '../data/seedData';
+import {
+  deduplicateAndFilterJobs,
+  DeduplicateResult,
+  syncCompaniesWithPosts,
+} from '../domain/jobLogic';
 import {
   ApplicationRecord,
   BusyScheduleMap,
@@ -39,17 +43,68 @@ function mergeSeedCatalog(
 ): PersistedAppState {
   const existingCompanyIds = new Set(persistedState.companies.map((company) => company.id));
   const existingJobIds = new Set(persistedState.rawJobs.map((job) => job.id));
+  const seedPostsById = new Map(seedState.posts.map((post) => [post.id, post]));
+  const existingPostIds = new Set(persistedState.posts.map((post) => post.id));
+
+  const enrichedExistingPosts = persistedState.posts.map((post) => {
+    const seedPost = seedPostsById.get(post.id);
+    if (!seedPost) {
+      return post;
+    }
+    const mergedRatings =
+      post.criteriaRatings && seedPost.criteriaRatings
+        ? { ...seedPost.criteriaRatings, ...post.criteriaRatings }
+        : post.criteriaRatings;
+    return {
+      ...post,
+      criteriaRatings: mergedRatings,
+      evidenceImages:
+        post.evidenceImages.length > 0 ? post.evidenceImages : seedPost.evidenceImages,
+    };
+  });
+
+  const mergedPosts = [
+    ...enrichedExistingPosts,
+    ...seedState.posts.filter((post) => !existingPostIds.has(post.id)),
+  ];
+
+  const seedCompaniesById = new Map(seedState.companies.map((company) => [company.id, company]));
+  const normalizedExistingCompanies = persistedState.companies.map((company) => {
+    const seedCompany = seedCompaniesById.get(company.id);
+    if (!seedCompany) {
+      return company;
+    }
+    return {
+      ...company,
+      name: seedCompany.name,
+      address: seedCompany.address,
+      district: seedCompany.district,
+      lat: seedCompany.lat,
+      lng: seedCompany.lng,
+    };
+  });
+
+  const mergedCompanies = [
+    ...normalizedExistingCompanies,
+    ...seedState.companies.filter((company) => !existingCompanyIds.has(company.id)),
+  ];
+
+  const validAnchorZoneIds = new Set(ANCHOR_ZONES.map((zone) => zone.id));
 
   return {
     ...persistedState,
-    companies: [
-      ...persistedState.companies,
-      ...seedState.companies.filter((company) => !existingCompanyIds.has(company.id)),
-    ],
+    profile: {
+      ...persistedState.profile,
+      anchorZoneId: validAnchorZoneIds.has(persistedState.profile.anchorZoneId)
+        ? persistedState.profile.anchorZoneId
+        : 'zone-bach-khoa-hn',
+    },
+    companies: syncCompaniesWithPosts(mergedCompanies, mergedPosts),
     rawJobs: [
       ...persistedState.rawJobs,
       ...seedState.rawJobs.filter((job) => !existingJobIds.has(job.id)),
     ],
+    posts: mergedPosts,
   };
 }
 
@@ -184,7 +239,7 @@ const PERIOD_TO_SHIFT: Record<
   },
 };
 
-export function AppStateProvider({ children }: { children: React.ReactNode }) {
+export function AppStateProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [state, setState] = useState<PersistedAppState>(loadInitialState);
   const [lastRealtimeSyncAt, setLastRealtimeSyncAt] = useState<string>(() =>
     new Date().toISOString()
@@ -219,7 +274,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         idx === 0
           ? {
               ...job,
-              status: job.status === 'new' ? ('urgent' as const) : ('updated' as const),
+              status: job.status === 'new' ? ('urgent' as const) : ('new' as const),
               updatedAt: nowIso,
             }
           : job
@@ -297,29 +352,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         comments: [],
       };
 
-      const ratings = input.criteriaRatings;
       setState((prev) => {
-        const nextCompanies =
-          input.type === 'review' && input.companyId && ratings
-            ? prev.companies.map((c) => {
-                if (c.id !== input.companyId) {
-                  return c;
-                }
-                const avgNew =
-                  (ratings.salaryTransparency + ratings.environment + ratings.scheduleFlexibility) /
-                  3;
-                const nextCount = c.reviewCount + 1;
-                const nextTrust = Number(
-                  ((c.trustScore * c.reviewCount + avgNew) / nextCount).toFixed(1)
-                );
-                return { ...c, reviewCount: nextCount, trustScore: nextTrust };
-              })
-            : prev.companies;
-
+        const nextPosts = [post, ...prev.posts];
         return {
           ...prev,
-          companies: nextCompanies,
-          posts: [post, ...prev.posts],
+          companies: syncCompaniesWithPosts(prev.companies, nextPosts),
+          posts: nextPosts,
           profile: {
             ...prev.profile,
             reputationPoints: prev.profile.reputationPoints + (input.type === 'review' ? 10 : 5),
@@ -340,7 +378,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const shareTrustedJob = useCallback((input: ShareTrustedJobInput): CanonicalJob => {
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
-    const expiresIso = new Date(now + 14 * 24 * 3600_000).toISOString();
+    const expiresIso = new Date(now + 14 * 24 * 3_600_000).toISOString();
     const shouldCreateCompany = !input.companyId;
     const resolvedCompanyId = input.companyId || `comp-shared-${now}`;
     const newJobId = `job-shared-${now}`;

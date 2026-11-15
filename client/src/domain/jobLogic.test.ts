@@ -1,5 +1,12 @@
 import { createSeedState } from '../data/seedData';
-import { computeJobScheduleMatch, deduplicateAndFilterJobs, haversineDistanceKm } from './jobLogic';
+import {
+  computeCompanyRatingStats,
+  computeJobScheduleMatch,
+  computePostOverallRating,
+  deduplicateAndFilterJobs,
+  haversineDistanceKm,
+  syncCompaniesWithPosts,
+} from './jobLogic';
 
 describe('jobLogic', () => {
   it('hides expired jobs and merges duplicate sources by dedupeKey', () => {
@@ -37,5 +44,37 @@ describe('jobLogic', () => {
     const km = haversineDistanceKm(10.87, 106.8031, 10.8752, 106.8007);
     expect(km).toBeGreaterThan(0.3);
     expect(km).toBeLessThan(1.5);
+  });
+
+  it('computes overall post rating and company rating breakdown from posts', () => {
+    const seed = createSeedState();
+
+    expect(
+      computePostOverallRating({
+        salaryTransparency: 5,
+        environment: 4,
+        scheduleFlexibility: 5,
+        benefits: 4,
+        jobQuality: 5,
+      })
+    ).toBe(4.6);
+
+    const coopStats = computeCompanyRatingStats('comp-coopxtra', seed.posts);
+    expect(coopStats.reviewCount).toBe(3);
+    expect(coopStats.averageRating).toBe(4.4);
+    expect(coopStats.distribution.map((d) => [d.stars, d.count])).toEqual([
+      [5, 2],
+      [4, 1],
+      [3, 0],
+      [2, 0],
+      [1, 0],
+    ]);
+    expect(coopStats.criteriaAverages).toHaveLength(5);
+
+    const syncedCoop = syncCompaniesWithPosts(seed.companies, seed.posts).find(
+      (c) => c.id === 'comp-coopxtra'
+    );
+    expect(syncedCoop?.trustScore).toBe(4.4);
+    expect(syncedCoop?.reviewCount).toBe(3);
   });
 });
