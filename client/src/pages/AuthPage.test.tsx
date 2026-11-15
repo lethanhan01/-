@@ -120,7 +120,8 @@ describe('AuthPage (Đăng nhập & Đăng ký)', () => {
     renderAuthenticatedApp();
 
     expect(screen.getByText('Protected system page')).toBeInTheDocument();
-    await user.click(screen.getAllByRole('button', { name: 'Đăng xuất' })[0]);
+    await user.click(screen.getByRole('button', { name: 'Tài khoản người dùng' }));
+    await user.click(await screen.findByRole('menuitem', { name: /Đăng xuất/i }));
 
     expect(await screen.findByLabelText(/Email sinh viên/i)).toBeInTheDocument();
     expect(screen.queryByText('Protected system page')).not.toBeInTheDocument();

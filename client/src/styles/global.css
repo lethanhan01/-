@@ -7,6 +7,7 @@ body {
 }
 
 .app-main-content {
+  min-width: 0;
   padding-bottom: var(--mantine-spacing-xl);
 
   @media (max-width: $mantine-breakpoint-sm) {

@@ -95,7 +95,17 @@ export function JobLeafletMap({
       mapInstanceRef.current = map;
       layerGroupRef.current = group;
 
+      // Re-measure Leaflet viewport when AppShell.Main resizes (e.g. sidebar collapse/expand)
+      let resizeObserver: ResizeObserver | null = null;
+      if (typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver(() => {
+          map.invalidateSize({ animate: false });
+        });
+        resizeObserver.observe(el);
+      }
+
       return () => {
+        resizeObserver?.disconnect();
         map.remove();
         mapInstanceRef.current = null;
         layerGroupRef.current = null;
