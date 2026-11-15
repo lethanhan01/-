@@ -44,7 +44,7 @@ const NAV_ITEMS = [
 export function AppLayout() {
   const location = useLocation();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const { state, derived, actions } = useAppState();
+  const { state, actions } = useAppState();
   const { currentUser, isAuthenticated, logout } = useAuthMock();
 
   const isRouteActive = (to: string) => {
