@@ -1,5 +1,4 @@
-import { IconAlertTriangle } from '@tabler/icons-react';
-import { Alert, Box, Button, Checkbox, Group, Modal, Stack, Text, Textarea } from '@mantine/core';
+import { Box, Button, Checkbox, Group, Modal, Stack, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useAppState } from '../../state/AppStateContext';
 
@@ -23,7 +22,7 @@ interface ReportFormValues {
   details: string;
 }
 
-export function ReportModal({ opened, onClose, companyId, companyName, jobId }: ReportModalProps) {
+export function ReportModal({ opened, onClose, companyId, jobId }: ReportModalProps) {
   const { actions } = useAppState();
 
   const form = useForm<ReportFormValues>({

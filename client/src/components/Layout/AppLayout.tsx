@@ -1,7 +1,6 @@
 import {
   IconAward,
   IconMapPin,
-  IconMessageCircle,
   IconMoon,
   IconRefresh,
   IconShieldCheck,
@@ -41,7 +40,7 @@ const NAV_ITEMS = [
 export function AppLayout() {
   const location = useLocation();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const { state, derived, actions } = useAppState();
+  const { state, actions } = useAppState();
 
   const isRouteActive = (to: string) => {
     if (to === '/') {
@@ -159,13 +158,6 @@ export function AppLayout() {
                   active={active}
                   label={item.label}
                   leftSection={<Icon size={18} />}
-                  rightSection={
-                    item.to === '/messages' && derived.unreadMessagesCount > 0 ? (
-                      <Badge size="xs" color="danger" variant="filled">
-                        {derived.unreadMessagesCount}
-                      </Badge>
-                    ) : null
-                  }
                 />
               );
             })}
@@ -219,11 +211,6 @@ export function AppLayout() {
                 <Stack align="center" justify="center" gap={2} h="100%">
                   <Group gap={4} wrap="nowrap">
                     <Icon size={20} />
-                    {item.to === '/messages' && derived.unreadMessagesCount > 0 ? (
-                      <Badge size="xs" color="danger" variant="filled" px={4}>
-                        {derived.unreadMessagesCount}
-                      </Badge>
-                    ) : null}
                   </Group>
                   <Text size="xs" fw={active ? 700 : 500} c={active ? 'brand' : 'dimmed'}>
                     {item.shortLabel}
