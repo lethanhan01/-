@@ -5,24 +5,26 @@ import {
   IconFilter,
   IconMapPin,
   IconRefresh,
-  IconSparkles,
 } from '@tabler/icons-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  Alert,
+  ActionIcon,
   Badge,
   Button,
   Card,
   Chip,
   Grid,
   Group,
+  Popover,
   Select,
   Stack,
   Switch,
   Text,
   Title,
+  Tooltip,
   UnstyledButton,
 } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { JobLeafletMap, MapJobItem } from '../components/Map/JobLeafletMap';
 import { TrustBadge } from '../components/TrustBadge/TrustBadge';
 import { ANCHOR_ZONES } from '../data/seedData';
@@ -206,6 +208,7 @@ export function JobsMapPage() {
   const [minTrust, setMinTrust] = useState<string>('0');
   const [selectedPeriods, setSelectedPeriods] = useState<ShiftPeriod[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(highlightJobId);
+  const [filtersOpened, { toggle: toggleFilters }] = useDisclosure(false);
 
   const anchorZone = useMemo(
     () => ANCHOR_ZONES.find((z) => z.id === state.profile.anchorZoneId) ?? ANCHOR_ZONES[0],
@@ -248,138 +251,124 @@ export function JobsMapPage() {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="flex-end" wrap="wrap">
-        <Stack gap={4}>
-          <Title order={1} size="h2">
-            Bản đồ Việc làm Thêm (MH-01)
-          </Title>
-          <Text size="sm" c="dimmed">
-            Khám phá tin tuyển dụng minh bạch quanh {anchorZone.label}, tự động khớp với lịch rảnh
-            từ hồ sơ cá nhân.
-          </Text>
-        </Stack>
-
-        <Button
-          variant="light"
-          size="xs"
-          leftSection={<IconRefresh size={15} />}
-          onClick={actions.simulateRealtimeTick}
+      <Group justify="flex-end" gap="xs">
+        <Popover
+          opened={filtersOpened}
+          onChange={(opened) => {
+            if (opened !== filtersOpened) {
+              toggleFilters();
+            }
+          }}
+          width={420}
+          position="bottom-end"
+          withArrow
+          trapFocus
+          shadow="md"
         >
-          Đồng bộ trạng thái thời gian thực
-        </Button>
-      </Group>
-
-      <Alert color="success" variant="light" icon={<IconSparkles size={18} />}>
-        <Group justify="space-between" wrap="wrap" gap="xs">
-          <Text size="sm">
-            Đang hiển thị{' '}
-            <Text span fw={700} className="app-tabular">
-              {filteredItems.length}
-            </Text>{' '}
-            công việc phù hợp • Đã khử trùng lặp{' '}
-            <Text span fw={700} className="app-tabular">
-              {derived.dedupeStats.mergedDuplicatesCount}
-            </Text>{' '}
-            tin từ nhiều nguồn • Đã tự động ẩn{' '}
-            <Text span fw={700} className="app-tabular">
-              {derived.dedupeStats.expiredHiddenCount}
-            </Text>{' '}
-            tin hết hạn.
-          </Text>
-          <Badge color="brand" variant="outline">
-            Ưu tiên khớp TKB
-          </Badge>
-        </Group>
-      </Alert>
-
-      <Card p="md">
-        <Stack gap="sm">
-          <Group justify="space-between" wrap="wrap">
-            <Group gap="xs">
-              <IconFilter size={17} />
-              <Text size="sm" fw={600}>
-                Bộ lọc đa chiều & Khớp lịch rảnh
-              </Text>
-            </Group>
-            <Switch
-              label="Chỉ hiện việc khớp lịch rảnh"
-              checked={onlyMatchingSchedule}
-              onChange={(e) => setOnlyMatchingSchedule(e.currentTarget.checked)}
-              color="success"
-            />
-          </Group>
-
-          <Grid gap="sm">
-            <Grid.Col span={{ base: 12, sm: 4 }}>
-              <Select
-                label="Bán kính quanh khu vực"
-                value={radiusKm}
-                onChange={(v) => setRadiusKm(v ?? '0')}
-                data={[
-                  { value: '2', label: 'Trong vòng 2 km' },
-                  { value: '5', label: 'Trong vòng 5 km' },
-                  { value: '10', label: 'Trong vòng 10 km' },
-                  { value: '0', label: 'Toàn TP.HCM' },
-                ]}
-                allowDeselect={false}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 4 }}>
-              <Select
-                label="Mức lương tối thiểu"
-                value={minWage}
-                onChange={(v) => setMinWage(v ?? '0')}
-                data={[
-                  { value: '0', label: 'Tất cả mức lương' },
-                  { value: '25000', label: 'Từ 25.000đ/giờ' },
-                  { value: '30000', label: 'Từ 30.000đ/giờ' },
-                  { value: '40000', label: 'Từ 40.000đ/giờ' },
-                ]}
-                allowDeselect={false}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 4 }}>
-              <Select
-                label="Điểm uy tín cơ sở"
-                value={minTrust}
-                onChange={(v) => setMinTrust(v ?? '0')}
-                data={[
-                  { value: '0', label: 'Tất cả (bao gồm tin cảnh báo)' },
-                  { value: '3.5', label: 'Từ 3.5 ★ trở lên' },
-                  { value: '4.5', label: 'Từ 4.5 ★ (Uy tín cao)' },
-                ]}
-                allowDeselect={false}
-              />
-            </Grid.Col>
-          </Grid>
-
-          <Group gap="xs" align="center" wrap="wrap">
-            <Text size="xs" fw={600} c="dimmed">
-              Ca làm việc:
-            </Text>
-            <Chip.Group
-              multiple
-              value={selectedPeriods}
-              onChange={(vals) => setSelectedPeriods(vals as ShiftPeriod[])}
+          <Popover.Target>
+            <ActionIcon
+              variant="light"
+              color="brand"
+              aria-label={filtersOpened ? 'Đóng bộ lọc' : 'Mở bộ lọc'}
+              aria-expanded={filtersOpened}
+              onClick={toggleFilters}
             >
-              <Group gap="xs">
-                <Chip value="morning" size="xs">
-                  Ca Sáng
-                </Chip>
-                <Chip value="afternoon" size="xs">
-                  Ca Chiều
-                </Chip>
-                <Chip value="evening" size="xs">
-                  Ca Tối
-                </Chip>
-                <Chip value="weekend" size="xs">
-                  Cuối tuần
-                </Chip>
+              <IconFilter size={17} />
+            </ActionIcon>
+          </Popover.Target>
+          <Popover.Dropdown>
+            <Stack gap="sm">
+              <Switch
+                label="Chỉ hiện việc khớp lịch rảnh"
+                checked={onlyMatchingSchedule}
+                onChange={(e) => setOnlyMatchingSchedule(e.currentTarget.checked)}
+                color="success"
+              />
+
+              <Grid gap="sm">
+                <Grid.Col span={{ base: 12, sm: 4 }}>
+                  <Select
+                    label="Bán kính quanh khu vực"
+                    value={radiusKm}
+                    onChange={(v) => setRadiusKm(v ?? '0')}
+                    data={[
+                      { value: '2', label: 'Trong vòng 2 km' },
+                      { value: '5', label: 'Trong vòng 5 km' },
+                      { value: '10', label: 'Trong vòng 10 km' },
+                      { value: '0', label: 'Toàn TP.HCM' },
+                    ]}
+                    allowDeselect={false}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 4 }}>
+                  <Select
+                    label="Mức lương tối thiểu"
+                    value={minWage}
+                    onChange={(v) => setMinWage(v ?? '0')}
+                    data={[
+                      { value: '0', label: 'Tất cả mức lương' },
+                      { value: '25000', label: 'Từ 25.000đ/giờ' },
+                      { value: '30000', label: 'Từ 30.000đ/giờ' },
+                      { value: '40000', label: 'Từ 40.000đ/giờ' },
+                    ]}
+                    allowDeselect={false}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 4 }}>
+                  <Select
+                    label="Điểm uy tín cơ sở"
+                    value={minTrust}
+                    onChange={(v) => setMinTrust(v ?? '0')}
+                    data={[
+                      { value: '0', label: 'Tất cả (bao gồm tin cảnh báo)' },
+                      { value: '3.5', label: 'Từ 3.5 ★ trở lên' },
+                      { value: '4.5', label: 'Từ 4.5 ★ (Uy tín cao)' },
+                    ]}
+                    allowDeselect={false}
+                  />
+                </Grid.Col>
+              </Grid>
+
+              <Group gap="xs" align="center" wrap="wrap">
+                <Text size="xs" fw={600} c="dimmed">
+                  Ca làm việc:
+                </Text>
+                <Chip.Group
+                  multiple
+                  value={selectedPeriods}
+                  onChange={(vals) => setSelectedPeriods(vals as ShiftPeriod[])}
+                >
+                  <Group gap="xs">
+                    <Chip value="morning" size="xs">
+                      Ca Sáng
+                    </Chip>
+                    <Chip value="afternoon" size="xs">
+                      Ca Chiều
+                    </Chip>
+                    <Chip value="evening" size="xs">
+                      Ca Tối
+                    </Chip>
+                    <Chip value="weekend" size="xs">
+                      Cuối tuần
+                    </Chip>
+                  </Group>
+                </Chip.Group>
               </Group>
-            </Chip.Group>
-          </Group>
-        </Stack>
-      </Card>
+            </Stack>
+          </Popover.Dropdown>
+        </Popover>
+
+        <Tooltip label="Đồng bộ trạng thái thời gian thực">
+          <ActionIcon
+            variant="light"
+            color="brand"
+            aria-label="Đồng bộ trạng thái thời gian thực"
+            onClick={actions.simulateRealtimeTick}
+          >
+            <IconRefresh size={17} />
+          </ActionIcon>
+        </Tooltip>
+      </Group>
 
       <Grid gap="md">
         <Grid.Col span={{ base: 12, md: 7 }}>
@@ -456,9 +445,6 @@ export function JobsMapPage() {
               <Title order={2} size="h4">
                 Danh sách việc làm ({filteredItems.length})
               </Title>
-              <Text size="xs" c="dimmed">
-                Sắp xếp theo độ khớp lịch rảnh
-              </Text>
             </Group>
 
             {filteredItems.map((item) => (

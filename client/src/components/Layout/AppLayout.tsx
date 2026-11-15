@@ -86,9 +86,6 @@ export function AppLayout() {
                 PartTime Tin Cậy
               </Text>
             </Button>
-            <Badge color="success" visibleFrom="md">
-              Minh bạch cho Sinh viên
-            </Badge>
           </Group>
 
           <Group gap="xs" wrap="nowrap">
