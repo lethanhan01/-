@@ -55,7 +55,6 @@ export function ReportModal({ opened, onClose, companyId, jobId }: ReportModalPr
     <Modal opened={opened} onClose={onClose} title="Báo cáo công việc này">
       <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
         <Stack gap="md">
-
           <Checkbox.Group
             label="Chọn dấu hiệu vi phạm bạn gặp phải"
             withAsterisk

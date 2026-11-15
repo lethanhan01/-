@@ -291,7 +291,7 @@ function CompanySidebarCards({
               leftSection={<IconFlag size={16} />}
               onClick={onOpenReport}
             >
-              Báo cáo
+              Báo cáo lừa đảo
             </Button>
           </Stack>
         </Stack>
