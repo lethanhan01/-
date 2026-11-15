@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { RedirectAuthenticatedUser, RequireAuth } from './components/Auth/AuthRouteGuards';
 import { AppLayout } from './components/Layout/AppLayout';
 import { AuthPage } from './pages/AuthPage';
 import { CommunityFeedPage } from './pages/CommunityFeedPage';
@@ -10,20 +11,30 @@ import { ProfileSchedulePage } from './pages/ProfileSchedulePage';
 
 const router = createBrowserRouter([
   {
-    element: <AppLayout />,
+    element: <RedirectAuthenticatedUser />,
     children: [
-      { path: '/', element: <JobsMapPage /> },
       { path: '/auth', element: <AuthPage /> },
       { path: '/login', element: <AuthPage defaultTab="login" /> },
       { path: '/register', element: <AuthPage defaultTab="register" /> },
-      { path: '/profile', element: <ProfileSchedulePage /> },
-      { path: '/jobs/:jobId', element: <JobDetailPage /> },
-      { path: '/jobs/:jobId/apply', element: <JobApplyPage /> },
-      { path: '/community', element: <CommunityFeedPage /> },
-      { path: '/messages', element: <MessagesPage /> },
-      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
+  {
+    element: <RequireAuth />,
+    children: [
+      {
+        element: <AppLayout />,
+        children: [
+          { path: '/', element: <JobsMapPage /> },
+          { path: '/profile', element: <ProfileSchedulePage /> },
+          { path: '/jobs/:jobId', element: <JobDetailPage /> },
+          { path: '/jobs/:jobId/apply', element: <JobApplyPage /> },
+          { path: '/community', element: <CommunityFeedPage /> },
+          { path: '/messages', element: <MessagesPage /> },
+        ],
+      },
+    ],
+  },
+  { path: '*', element: <Navigate to="/login" replace /> },
 ]);
 
 export function Router() {
