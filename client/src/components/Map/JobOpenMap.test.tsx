@@ -16,6 +16,8 @@ const mockState = vi.hoisted(() => ({
   setStyleCalls: [] as Array<string | object>,
   flyToCalls: [] as Array<{ center: [number, number]; zoom: number }>,
   panToCalls: [] as Array<[number, number]>,
+  zoomInCalls: 0,
+  zoomOutCalls: 0,
   addSourceCalls: [] as Array<{ id: string; source: object }>,
   addLayerCalls: [] as Array<{ id: string; type: string }>,
   popupSetTextCalls: [] as string[],
@@ -73,6 +75,14 @@ vi.mock('@openmapvn/openmapvn-gl', () => {
 
     panTo = vi.fn((lngLat: [number, number]) => {
       mockState.panToCalls.push(lngLat);
+    });
+
+    zoomIn = vi.fn(() => {
+      mockState.zoomInCalls += 1;
+    });
+
+    zoomOut = vi.fn(() => {
+      mockState.zoomOutCalls += 1;
     });
   }
 
@@ -165,6 +175,8 @@ describe('JobOpenMap', () => {
     mockState.setStyleCalls = [];
     mockState.flyToCalls = [];
     mockState.panToCalls = [];
+    mockState.zoomInCalls = 0;
+    mockState.zoomOutCalls = 0;
     mockState.addSourceCalls = [];
     mockState.addLayerCalls = [];
     mockState.popupSetTextCalls = [];
@@ -315,6 +327,11 @@ describe('JobOpenMap', () => {
     );
     const latestUserMarker = userMarkers.at(-1);
     expect(latestUserMarker?.lngLat).toEqual([105.8542, 21.0285]);
+
+    await user.click(screen.getByRole('button', { name: /Phóng to bản đồ/i }));
+    await user.click(screen.getByRole('button', { name: /Thu nhỏ bản đồ/i }));
+    expect(mockState.zoomInCalls).toBe(1);
+    expect(mockState.zoomOutCalls).toBe(1);
 
     await user.click(screen.getByRole('button', { name: /Quay về vị trí hiện tại/i }));
     expect(mockState.flyToCalls).toContainEqual(

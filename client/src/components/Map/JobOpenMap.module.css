@@ -15,12 +15,13 @@
   }
 }
 
-.locateButton {
+.controlGroup {
   position: absolute;
-  top: rem(80px);
-  right: rem(10px);
+  top: var(--mantine-spacing-xs);
+  right: var(--mantine-spacing-xs);
   z-index: 2;
-  box-shadow: var(--mantine-shadow-md);
+  border-radius: var(--mantine-radius-sm);
+  box-shadow: var(--mantine-shadow-sm);
 }
 
 .jobPin {

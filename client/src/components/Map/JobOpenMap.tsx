@@ -2,12 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Map as OpenMap,
   Marker,
-  NavigationControl,
   Popup,
   type GeoJSONSource,
   type StyleSpecification,
 } from '@openmapvn/openmapvn-gl';
-import { IconCurrentLocation } from '@tabler/icons-react';
+import { IconCurrentLocation, IconMinus, IconPlus } from '@tabler/icons-react';
 import {
   ActionIcon,
   Badge,
@@ -282,8 +281,6 @@ export function JobOpenMap({
         zoom: 13,
       });
 
-      map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
-
       const handleStyleLoad = () => {
         const { center: overlayCenter, radiusKm: overlayRadius } = latestOverlayRef.current;
         syncRadiusOverlay(map, overlayCenter, overlayRadius, resolveBrandColor());
@@ -466,6 +463,14 @@ export function JobOpenMap({
       .addTo(map);
   }, [selectedJobId, visibleItems]);
 
+  const handleZoomIn = () => {
+    mapRef.current?.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    mapRef.current?.zoomOut();
+  };
+
   const handleRecenter = () => {
     if (mapRef.current) {
       mapRef.current.flyTo({
@@ -539,20 +544,43 @@ export function JobOpenMap({
           className={classes.mapContainer}
           aria-label="Bản đồ việc làm thêm tại Hà Nội"
         />
-        <Tooltip label="Quay về vị trí hiện tại" position="left">
-          <ActionIcon
-            className={classes.locateButton}
-            variant="filled"
-            color="brand"
-            size="lg"
-            radius="xl"
-            loading={isLocating}
-            aria-label="Quay về vị trí hiện tại"
-            onClick={handleRecenter}
-          >
-            <IconCurrentLocation size={18} />
-          </ActionIcon>
-        </Tooltip>
+        <ActionIcon.Group
+          orientation="vertical"
+          className={classes.controlGroup}
+          aria-label="Điều khiển bản đồ"
+        >
+          <Tooltip label="Phóng to bản đồ" position="left">
+            <ActionIcon
+              variant="default"
+              size="md"
+              aria-label="Phóng to bản đồ"
+              onClick={handleZoomIn}
+            >
+              <IconPlus size={16} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Thu nhỏ bản đồ" position="left">
+            <ActionIcon
+              variant="default"
+              size="md"
+              aria-label="Thu nhỏ bản đồ"
+              onClick={handleZoomOut}
+            >
+              <IconMinus size={16} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Quay về vị trí hiện tại" position="left">
+            <ActionIcon
+              variant="default"
+              size="md"
+              loading={isLocating}
+              aria-label="Quay về vị trí hiện tại"
+              onClick={handleRecenter}
+            >
+              <IconCurrentLocation size={16} />
+            </ActionIcon>
+          </Tooltip>
+        </ActionIcon.Group>
       </Box>
       {legend}
     </Stack>
