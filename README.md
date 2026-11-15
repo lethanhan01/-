@@ -1,3 +1,10 @@
+## Tài khoản mock để test
+
+```
+email: minhanh@hcmut.edu.vn
+password: 123456
+```
+
 Tài liệu UI bắt buộc cần phải tuân thủ khi phát triển:
 
 ```

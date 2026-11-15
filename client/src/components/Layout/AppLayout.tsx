@@ -8,8 +8,8 @@ import {
   IconSun,
   IconUser,
   IconUsers,
-} from '@tabler/icons-react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+} from "@tabler/icons-react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ActionIcon,
   AppShell,
@@ -25,18 +25,28 @@ import {
   Tooltip,
   UnstyledButton,
   useMantineColorScheme,
-} from '@mantine/core';
-import { modals } from '@mantine/modals';
-import { ANCHOR_ZONES } from '../../data/seedData';
-import { useAppState } from '../../state/AppStateContext';
-import { useAuthMock } from '../../state/AuthMockContext';
-import classes from './AppLayout.module.css';
+} from "@mantine/core";
+import { modals } from "@mantine/modals";
+import { ANCHOR_ZONES } from "../../data/seedData";
+import { useAppState } from "../../state/AppStateContext";
+import { useAuthMock } from "../../state/AuthMockContext";
+import classes from "./AppLayout.module.css";
 
 const NAV_ITEMS = [
-  { label: 'Bản đồ việc làm', shortLabel: 'Bản đồ', to: '/', icon: IconMapPin },
-  { label: 'Mạng xã hội & Đánh giá', shortLabel: 'Cộng đồng', to: '/community', icon: IconUsers },
+  { label: "Bản đồ việc làm", shortLabel: "Bản đồ", to: "/", icon: IconMapPin },
+  {
+    label: "Mạng xã hội & Đánh giá",
+    shortLabel: "Cộng đồng",
+    to: "/community",
+    icon: IconUsers,
+  },
   //{ label: 'Nhắn tin Cộng đồng', shortLabel: 'Nhắn tin', to: '/messages', icon: IconMessageCircle },
-  { label: 'Hồ sơ & Lịch rảnh', shortLabel: 'Hồ sơ', to: '/profile', icon: IconUser },
+  {
+    label: "Hồ sơ & Lịch rảnh",
+    shortLabel: "Hồ sơ",
+    to: "/profile",
+    icon: IconUser,
+  },
 ] as const;
 
 export function AppLayout() {
@@ -47,28 +57,28 @@ export function AppLayout() {
   const { currentUser, logout } = useAuthMock();
 
   const isRouteActive = (to: string) => {
-    if (to === '/') {
-      return location.pathname === '/' || location.pathname.startsWith('/jobs');
+    if (to === "/") {
+      return location.pathname === "/" || location.pathname.startsWith("/jobs");
     }
     return location.pathname.startsWith(to);
   };
 
   const handleLogout = () => {
     logout();
-    void navigate('/login', { replace: true });
+    void navigate("/login", { replace: true });
   };
 
   const handleResetDemo = () => {
     modals.openConfirmModal({
-      title: 'Khôi phục dữ liệu mẫu?',
+      title: "Khôi phục dữ liệu mẫu?",
       children: (
         <Text size="sm">
-          Toàn bộ đơn ứng tuyển, bài viết, tin nhắn và chỉnh sửa lịch rảnh sẽ trở về dữ liệu mẫu ban
-          đầu.
+          Toàn bộ đơn ứng tuyển, bài viết, tin nhắn và chỉnh sửa lịch rảnh sẽ
+          trở về dữ liệu mẫu ban đầu.
         </Text>
       ),
-      labels: { confirm: 'Khôi phục ngay', cancel: 'Hủy' },
-      confirmProps: { color: 'brand' },
+      labels: { confirm: "Khôi phục ngay", cancel: "Hủy" },
+      confirmProps: { color: "brand" },
       onConfirm: () => actions.resetDemoData(),
     });
   };
@@ -76,7 +86,7 @@ export function AppLayout() {
   return (
     <AppShell
       header={{ height: 62 }}
-      navbar={{ width: 248, breakpoint: 'sm', collapsed: { mobile: true } }}
+      navbar={{ width: 248, breakpoint: "sm", collapsed: { mobile: true } }}
       padding="md"
     >
       <AppShell.Header px="md">
@@ -97,21 +107,6 @@ export function AppLayout() {
           </Group>
 
           <Group gap="xs" wrap="nowrap">
-            <Select
-              aria-label="Khu vực sinh sống"
-              size="xs"
-              w={{ base: 145, sm: 205 }}
-              leftSection={<IconMapPin size={14} />}
-              data={ANCHOR_ZONES.map((z) => ({ value: z.id, label: z.label }))}
-              value={state.profile.anchorZoneId}
-              onChange={(val) => {
-                if (val) {
-                  actions.setAnchorZone(val);
-                }
-              }}
-              allowDeselect={false}
-            />
-
             <Tooltip label="Điểm uy tín tích lũy của bạn">
               <Badge
                 component={Link}
@@ -138,7 +133,11 @@ export function AppLayout() {
             </Tooltip>
 
             <Tooltip
-              label={colorScheme === 'dark' ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'}
+              label={
+                colorScheme === "dark"
+                  ? "Chuyển giao diện sáng"
+                  : "Chuyển giao diện tối"
+              }
             >
               <ActionIcon
                 variant="default"
@@ -146,7 +145,11 @@ export function AppLayout() {
                 aria-label="Đổi chế độ màu sáng tối"
                 onClick={() => toggleColorScheme()}
               >
-                {colorScheme === 'dark' ? <IconSun size={17} /> : <IconMoon size={17} />}
+                {colorScheme === "dark" ? (
+                  <IconSun size={17} />
+                ) : (
+                  <IconMoon size={17} />
+                )}
               </ActionIcon>
             </Tooltip>
           </Group>
@@ -178,7 +181,9 @@ export function AppLayout() {
                 {currentUser ? currentUser.fullName : state.profile.fullName}
               </Text>
               <Text size="xs" c="dimmed" lineClamp={1}>
-                {currentUser ? currentUser.university : state.profile.university}
+                {currentUser
+                  ? currentUser.university
+                  : state.profile.university}
               </Text>
               <Group gap="xs" mt={4}>
                 <Badge size="xs" color="success">
@@ -225,13 +230,17 @@ export function AppLayout() {
                 h="100%"
                 className={classes.mobileNavItem}
                 mod={{ active }}
-                aria-current={active ? 'page' : undefined}
+                aria-current={active ? "page" : undefined}
               >
                 <Stack align="center" justify="center" gap={2} h="100%">
                   <Group gap={4} wrap="nowrap">
                     <Icon size={20} />
                   </Group>
-                  <Text size="xs" fw={active ? 700 : 500} c={active ? 'brand' : 'dimmed'}>
+                  <Text
+                    size="xs"
+                    fw={active ? 700 : 500}
+                    c={active ? "brand" : "dimmed"}
+                  >
                     {item.shortLabel}
                   </Text>
                 </Stack>
