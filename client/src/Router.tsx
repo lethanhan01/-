@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { AppLayout } from './components/Layout/AppLayout';
+import { AuthPage } from './pages/AuthPage';
 import { CommunityFeedPage } from './pages/CommunityFeedPage';
 import { JobApplyPage } from './pages/JobApplyPage';
 import { JobDetailPage } from './pages/JobDetailPage';
@@ -12,6 +13,9 @@ const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { path: '/', element: <JobsMapPage /> },
+      { path: '/auth', element: <AuthPage /> },
+      { path: '/login', element: <AuthPage defaultTab="login" /> },
+      { path: '/register', element: <AuthPage defaultTab="register" /> },
       { path: '/profile', element: <ProfileSchedulePage /> },
       { path: '/jobs/:jobId', element: <JobDetailPage /> },
       { path: '/jobs/:jobId/apply', element: <JobApplyPage /> },

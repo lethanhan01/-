@@ -1,0 +1,5 @@
+.pageRoot {
+  max-width: rem(520px);
+  margin-inline: auto;
+  padding-block: var(--mantine-spacing-md);
+}
