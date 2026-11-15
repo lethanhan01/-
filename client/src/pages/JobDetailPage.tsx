@@ -273,7 +273,7 @@ function CompanySidebarCards({
                 to={`/jobs/${jobId}/apply`}
                 leftSection={<IconSend size={16} />}
               >
-                Ứng tuyển ngay (MH-06)
+                Ứng tuyển ngay
               </Button>
             )}
 
@@ -291,7 +291,7 @@ function CompanySidebarCards({
               leftSection={<IconFlag size={16} />}
               onClick={onOpenReport}
             >
-              Báo cáo lừa đảo / vi phạm
+              Báo cáo lừa đảo
             </Button>
           </Stack>
         </Stack>
@@ -393,7 +393,7 @@ export function JobDetailPage() {
             Không tìm thấy tin tuyển dụng
           </Title>
           <Button component={Link} to="/" leftSection={<IconArrowLeft size={16} />}>
-            Quay lại Bản đồ việc làm
+            Bản đồ việc làm
           </Button>
         </Stack>
       </Card>
@@ -409,7 +409,7 @@ export function JobDetailPage() {
     <Stack gap="md">
       <Group justify="space-between" wrap="wrap">
         <Button component={Link} to="/" variant="subtle" leftSection={<IconArrowLeft size={16} />}>
-          Quay lại Bản đồ (MH-01)
+          Bản đồ
         </Button>
 
         <Group gap="xs">
