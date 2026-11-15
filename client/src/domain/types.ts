@@ -121,6 +121,8 @@ export interface CriteriaRatings {
   salaryTransparency: number;
   environment: number;
   scheduleFlexibility: number;
+  benefits?: number;
+  jobQuality?: number;
 }
 
 export interface PostComment {
