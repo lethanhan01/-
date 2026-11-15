@@ -11,8 +11,8 @@ import {
   IconSun,
   IconUser,
   IconUsers,
-} from "@tabler/icons-react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+} from '@tabler/icons-react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ActionIcon,
   AppShell,
@@ -28,26 +28,26 @@ import {
   Tooltip,
   UnstyledButton,
   useMantineColorScheme,
-} from "@mantine/core";
-import { useLocalStorage } from "@mantine/hooks";
-import { modals } from "@mantine/modals";
-import { useAppState } from "../../state/AppStateContext";
-import { useAuthMock } from "../../state/AuthMockContext";
-import classes from "./AppLayout.module.css";
+} from '@mantine/core';
+import { useLocalStorage } from '@mantine/hooks';
+import { modals } from '@mantine/modals';
+import { useAppState } from '../../state/AppStateContext';
+import { useAuthMock } from '../../state/AuthMockContext';
+import classes from './AppLayout.module.css';
 
 const NAV_ITEMS = [
-  { label: "Bản đồ việc làm", shortLabel: "Bản đồ", to: "/", icon: IconMapPin },
+  { label: 'Bản đồ việc làm', shortLabel: 'Bản đồ', to: '/', icon: IconMapPin },
   {
-    label: "Mạng xã hội & Đánh giá",
-    shortLabel: "Cộng đồng",
-    to: "/community",
+    label: 'Mạng xã hội & Đánh giá',
+    shortLabel: 'Cộng đồng',
+    to: '/community',
     icon: IconUsers,
   },
   //{ label: 'Nhắn tin Cộng đồng', shortLabel: 'Nhắn tin', to: '/messages', icon: IconMessageCircle },
   {
-    label: "Hồ sơ & Lịch rảnh",
-    shortLabel: "Hồ sơ",
-    to: "/profile",
+    label: 'Hồ sơ & Lịch rảnh',
+    shortLabel: 'Hồ sơ',
+    to: '/profile',
     icon: IconUser,
   },
 ] as const;
@@ -59,58 +59,54 @@ export function AppLayout() {
   const { state, actions } = useAppState();
   const { currentUser, logout } = useAuthMock();
   const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage<boolean>({
-    key: "svjob_sidebar_collapsed_v1",
+    key: 'svjob_sidebar_collapsed_v1',
     defaultValue: false,
   });
 
-  const displayName = currentUser
-    ? currentUser.fullName
-    : state.profile.fullName;
-  const displayUniversity = currentUser
-    ? currentUser.university
-    : state.profile.university;
-  const avatarInitial = displayName.trim().slice(0, 1).toUpperCase() || "U";
-  const currentProfileTab = location.pathname.startsWith("/profile")
-    ? new URLSearchParams(location.search).get("tab") || "profile"
+  const displayName = currentUser ? currentUser.fullName : state.profile.fullName;
+  const displayUniversity = currentUser ? currentUser.university : state.profile.university;
+  const avatarInitial = displayName.trim().slice(0, 1).toUpperCase() || 'U';
+  const currentProfileTab = location.pathname.startsWith('/profile')
+    ? new URLSearchParams(location.search).get('tab') || 'profile'
     : null;
 
   const isRouteActive = (to: string) => {
-    if (to === "/") {
-      return location.pathname === "/" || location.pathname.startsWith("/jobs");
+    if (to === '/') {
+      return location.pathname === '/' || location.pathname.startsWith('/jobs');
     }
     return location.pathname.startsWith(to);
   };
 
   const handleLogout = () => {
     logout();
-    void navigate("/login", { replace: true });
+    void navigate('/login', { replace: true });
   };
 
   const handleResetDemo = () => {
     modals.openConfirmModal({
-      title: "Khôi phục dữ liệu mẫu?",
+      title: 'Khôi phục dữ liệu mẫu?',
       children: (
         <Text size="sm">
-          Toàn bộ đơn ứng tuyển, bài viết, tin nhắn và chỉnh sửa lịch rảnh sẽ
-          trở về dữ liệu mẫu ban đầu.
+          Toàn bộ đơn ứng tuyển, bài viết, tin nhắn và chỉnh sửa lịch rảnh sẽ trở về dữ liệu mẫu ban
+          đầu.
         </Text>
       ),
-      labels: { confirm: "Khôi phục ngay", cancel: "Hủy" },
-      confirmProps: { color: "brand" },
+      labels: { confirm: 'Khôi phục ngay', cancel: 'Hủy' },
+      confirmProps: { color: 'brand' },
       onConfirm: () => actions.resetDemoData(),
     });
   };
 
   const toggleSidebarLabel = sidebarCollapsed
-    ? "Mở rộng thanh điều hướng"
-    : "Thu gọn thanh điều hướng";
+    ? 'Mở rộng thanh điều hướng'
+    : 'Thu gọn thanh điều hướng';
 
   return (
     <AppShell
       header={{ height: 62 }}
       navbar={{
         width: sidebarCollapsed ? 68 : 248,
-        breakpoint: "sm",
+        breakpoint: 'sm',
         collapsed: { mobile: true },
       }}
       padding="md"
@@ -147,11 +143,7 @@ export function AppLayout() {
             </Tooltip>
 
             <Tooltip
-              label={
-                colorScheme === "dark"
-                  ? "Chuyển giao diện sáng"
-                  : "Chuyển giao diện tối"
-              }
+              label={colorScheme === 'dark' ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'}
             >
               <ActionIcon
                 variant="default"
@@ -159,11 +151,7 @@ export function AppLayout() {
                 aria-label="Đổi chế độ màu sáng tối"
                 onClick={() => toggleColorScheme()}
               >
-                {colorScheme === "dark" ? (
-                  <IconSun size={17} />
-                ) : (
-                  <IconMoon size={17} />
-                )}
+                {colorScheme === 'dark' ? <IconSun size={17} /> : <IconMoon size={17} />}
               </ActionIcon>
             </Tooltip>
 
@@ -208,8 +196,8 @@ export function AppLayout() {
                   component={Link}
                   to="/profile?tab=profile"
                   leftSection={<IconUser size={15} />}
-                  c={currentProfileTab === "profile" ? "brand" : undefined}
-                  fw={currentProfileTab === "profile" ? 600 : undefined}
+                  c={currentProfileTab === 'profile' ? 'brand' : undefined}
+                  fw={currentProfileTab === 'profile' ? 600 : undefined}
                 >
                   Hồ sơ
                 </Menu.Item>
@@ -217,8 +205,8 @@ export function AppLayout() {
                   component={Link}
                   to="/profile?tab=schedule"
                   leftSection={<IconCalendarTime size={15} />}
-                  c={currentProfileTab === "schedule" ? "brand" : undefined}
-                  fw={currentProfileTab === "schedule" ? 600 : undefined}
+                  c={currentProfileTab === 'schedule' ? 'brand' : undefined}
+                  fw={currentProfileTab === 'schedule' ? 600 : undefined}
                 >
                   Lịch rảnh
                 </Menu.Item>
@@ -226,19 +214,15 @@ export function AppLayout() {
                   component={Link}
                   to="/profile?tab=history"
                   leftSection={<IconHistory size={15} />}
-                  c={currentProfileTab === "history" ? "brand" : undefined}
-                  fw={currentProfileTab === "history" ? 600 : undefined}
+                  c={currentProfileTab === 'history' ? 'brand' : undefined}
+                  fw={currentProfileTab === 'history' ? 600 : undefined}
                 >
                   Lịch sử hoạt động
                 </Menu.Item>
 
                 <Menu.Divider />
 
-                <Menu.Item
-                  c="danger"
-                  leftSection={<IconLogout size={15} />}
-                  onClick={handleLogout}
-                >
+                <Menu.Item c="danger" leftSection={<IconLogout size={15} />} onClick={handleLogout}>
                   Đăng xuất
                 </Menu.Item>
               </Menu.Dropdown>
@@ -247,7 +231,7 @@ export function AppLayout() {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p={sidebarCollapsed ? "xs" : "sm"}>
+      <AppShell.Navbar p={sidebarCollapsed ? 'xs' : 'sm'}>
         <Stack gap="xs" justify="space-between" h="100%">
           <Stack gap={6}>
             {NAV_ITEMS.map((item) => {
@@ -289,7 +273,7 @@ export function AppLayout() {
             <NavLink
               component="button"
               type="button"
-              label={sidebarCollapsed ? undefined : "Thu gọn"}
+              label={sidebarCollapsed ? undefined : 'Thu gọn'}
               aria-label={toggleSidebarLabel}
               aria-expanded={!sidebarCollapsed}
               leftSection={
@@ -333,17 +317,13 @@ export function AppLayout() {
                 h="100%"
                 className={classes.mobileNavItem}
                 mod={{ active }}
-                aria-current={active ? "page" : undefined}
+                aria-current={active ? 'page' : undefined}
               >
                 <Stack align="center" justify="center" gap={2} h="100%">
                   <Group gap={4} wrap="nowrap">
                     <Icon size={20} />
                   </Group>
-                  <Text
-                    size="xs"
-                    fw={active ? 700 : 500}
-                    c={active ? "brand" : "dimmed"}
-                  >
+                  <Text size="xs" fw={active ? 700 : 500} c={active ? 'brand' : 'dimmed'}>
                     {item.shortLabel}
                   </Text>
                 </Stack>
