@@ -1,0 +1,148 @@
+.mapWrapper {
+  position: relative;
+}
+
+.mapContainer {
+  width: 100%;
+  height: rem(480px);
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-default-border);
+  overflow: hidden;
+  z-index: 1;
+
+  @media (max-width: $mantine-breakpoint-sm) {
+    height: rem(340px);
+  }
+}
+
+.locateButton {
+  position: absolute;
+  top: rem(80px);
+  right: rem(10px);
+  z-index: 2;
+  box-shadow: var(--mantine-shadow-md);
+}
+
+.jobPin {
+  width: rem(20px);
+  height: rem(20px);
+  border-radius: 50%;
+  border: rem(2.5px) solid var(--mantine-color-body);
+  box-shadow:
+    0 0 0 rem(1px) var(--mantine-color-default-border),
+    var(--mantine-shadow-sm);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease;
+
+  @mixin hover {
+    transform: scale(1.12);
+  }
+
+  &[data-status='new'] {
+    background-color: var(--mantine-color-brand-filled);
+  }
+
+  &[data-status='urgent'] {
+    background-color: var(--mantine-color-warning-filled);
+  }
+
+  &[data-status='expiring'] {
+    background-color: var(--mantine-color-danger-filled);
+  }
+
+  &[data-selected='true'] {
+    width: rem(26px);
+    height: rem(26px);
+    border-width: rem(3px);
+    border-color: var(--mantine-color-text);
+    z-index: 3;
+  }
+
+  &:focus-visible {
+    outline: rem(2px) solid var(--mantine-primary-color-filled);
+    outline-offset: rem(2px);
+  }
+}
+
+.userLocationPin {
+  width: rem(18px);
+  height: rem(18px);
+  border-radius: 50%;
+  border: rem(3px) solid var(--mantine-color-body);
+  background-color: var(--mantine-color-success-filled);
+  box-shadow:
+    0 0 0 rem(6px) var(--mantine-color-success-light),
+    var(--mantine-shadow-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 150ms ease;
+
+  @mixin hover {
+    transform: scale(1.12);
+  }
+
+  &:focus-visible {
+    outline: rem(2px) solid var(--mantine-color-success-filled);
+    outline-offset: rem(4px);
+  }
+}
+
+.legendPin {
+  width: rem(18px);
+  height: rem(18px);
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: rem(2.5px) solid var(--mantine-color-body);
+  box-shadow: 0 0 0 rem(1px) var(--mantine-color-default-border);
+
+  &[data-status='new'] {
+    background-color: var(--mantine-color-brand-filled);
+  }
+
+  &[data-status='urgent'] {
+    background-color: var(--mantine-color-warning-filled);
+  }
+
+  &[data-status='expiring'] {
+    background-color: var(--mantine-color-danger-filled);
+  }
+
+  &[data-kind='user'] {
+    background-color: var(--mantine-color-success-filled);
+    box-shadow: 0 0 0 rem(4px) var(--mantine-color-success-light);
+  }
+}
+
+.mapPopup {
+  & :global(.maplibregl-popup-content) {
+    background-color: var(--mantine-color-default);
+    color: var(--mantine-color-text);
+    border-radius: var(--mantine-radius-md);
+    border: 1px solid var(--mantine-color-default-border);
+    padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+    box-shadow: var(--mantine-shadow-md);
+  }
+
+  &:global(.maplibregl-popup-anchor-top) :global(.maplibregl-popup-tip),
+  &:global(.maplibregl-popup-anchor-top-left) :global(.maplibregl-popup-tip),
+  &:global(.maplibregl-popup-anchor-top-right) :global(.maplibregl-popup-tip) {
+    border-bottom-color: var(--mantine-color-default);
+  }
+
+  &:global(.maplibregl-popup-anchor-bottom) :global(.maplibregl-popup-tip),
+  &:global(.maplibregl-popup-anchor-bottom-left) :global(.maplibregl-popup-tip),
+  &:global(.maplibregl-popup-anchor-bottom-right) :global(.maplibregl-popup-tip) {
+    border-top-color: var(--mantine-color-default);
+  }
+
+  &:global(.maplibregl-popup-anchor-left) :global(.maplibregl-popup-tip) {
+    border-right-color: var(--mantine-color-default);
+  }
+
+  &:global(.maplibregl-popup-anchor-right) :global(.maplibregl-popup-tip) {
+    border-left-color: var(--mantine-color-default);
+  }
+}

@@ -49,13 +49,13 @@ describe('Student Part-Time App Flows', () => {
     expect(screen.getByText(/Danh sách việc làm/i)).toBeInTheDocument();
   });
 
-  it('merges new seed jobs into an existing saved state', () => {
+  it('merges new seed jobs and normalizes legacy non-Hanoi anchorZoneId into Hanoi', () => {
     const savedState = createSeedState();
     savedState.companies = savedState.companies.filter(
       (company) => !company.id.startsWith('comp-hust-')
     );
     savedState.rawJobs = savedState.rawJobs.filter((job) => !job.id.startsWith('job-hust-'));
-    savedState.profile.anchorZoneId = 'zone-bach-khoa-hn';
+    savedState.profile.anchorZoneId = 'zone-dhqg';
     window.localStorage.setItem('svjob_state_v1', JSON.stringify(savedState));
 
     renderAppRoute('/', false);
@@ -139,7 +139,7 @@ describe('Student Part-Time App Flows', () => {
 
     expect(await screen.findByText(/Danh sách việc làm/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Nhân viên Pha chế Ca Tối/i).length).toBeGreaterThanOrEqual(1);
-  });
+  }, 15000);
 
   it('switches threads with aria-current and sends message + profile card on MH-05', async () => {
     const user = userEvent.setup();

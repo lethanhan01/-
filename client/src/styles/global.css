@@ -14,10 +14,3 @@ body {
     padding-bottom: calc(var(--app-bottom-nav-h) + var(--mantine-spacing-lg));
   }
 }
-
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background-color: var(--mantine-color-default);
-  color: var(--mantine-color-text);
-  border-radius: var(--mantine-radius-md);
-}

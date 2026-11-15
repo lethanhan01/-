@@ -1,18 +1,11 @@
-import {
-  createContext,
-  use,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { notifications } from "@mantine/notifications";
-import { createSeedState } from "../data/seedData";
+import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react';
+import { notifications } from '@mantine/notifications';
+import { createSeedState } from '../data/seedData';
 import {
   deduplicateAndFilterJobs,
   DeduplicateResult,
   syncCompaniesWithPosts,
-} from "../domain/jobLogic";
+} from '../domain/jobLogic';
 import {
   ApplicationRecord,
   BusyScheduleMap,
@@ -26,13 +19,11 @@ import {
   ShiftPeriod,
   StudentProfile,
   Weekday,
-} from "../domain/types";
+} from '../domain/types';
 
-const STORAGE_KEY = "svjob_state_v1";
+const STORAGE_KEY = 'svjob_state_v1';
 
-function isPersistedAppState(
-  value: Partial<PersistedAppState>,
-): value is PersistedAppState {
+function isPersistedAppState(value: Partial<PersistedAppState>): value is PersistedAppState {
   return (
     value.schemaVersion === 1 &&
     Boolean(value.profile) &&
@@ -48,11 +39,9 @@ function isPersistedAppState(
 
 function mergeSeedCatalog(
   persistedState: PersistedAppState,
-  seedState: PersistedAppState,
+  seedState: PersistedAppState
 ): PersistedAppState {
-  const existingCompanyIds = new Set(
-    persistedState.companies.map((company) => company.id),
-  );
+  const existingCompanyIds = new Set(persistedState.companies.map((company) => company.id));
   const existingJobIds = new Set(persistedState.rawJobs.map((job) => job.id));
   const seedPostsById = new Map(seedState.posts.map((post) => [post.id, post]));
   const existingPostIds = new Set(persistedState.posts.map((post) => post.id));
@@ -70,9 +59,7 @@ function mergeSeedCatalog(
       ...post,
       criteriaRatings: mergedRatings,
       evidenceImages:
-        post.evidenceImages.length > 0
-          ? post.evidenceImages
-          : seedPost.evidenceImages,
+        post.evidenceImages.length > 0 ? post.evidenceImages : seedPost.evidenceImages,
     };
   });
 
@@ -83,13 +70,18 @@ function mergeSeedCatalog(
 
   const mergedCompanies = [
     ...persistedState.companies,
-    ...seedState.companies.filter(
-      (company) => !existingCompanyIds.has(company.id),
-    ),
+    ...seedState.companies.filter((company) => !existingCompanyIds.has(company.id)),
   ];
 
   return {
     ...persistedState,
+    profile: {
+      ...persistedState.profile,
+      anchorZoneId:
+        persistedState.profile.anchorZoneId === 'zone-bach-khoa-hn'
+          ? persistedState.profile.anchorZoneId
+          : 'zone-bach-khoa-hn',
+    },
     companies: syncCompaniesWithPosts(mergedCompanies, mergedPosts),
     rawJobs: [
       ...persistedState.rawJobs,
@@ -100,7 +92,7 @@ function mergeSeedCatalog(
 }
 
 function loadInitialState(): PersistedAppState {
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     return createSeedState();
   }
   try {
@@ -172,7 +164,7 @@ export interface AppStateContextValue {
   state: PersistedAppState;
   derived: {
     canonicalJobs: CanonicalJob[];
-    dedupeStats: Omit<DeduplicateResult, "jobs">;
+    dedupeStats: Omit<DeduplicateResult, 'jobs'>;
     unreadMessagesCount: number;
     lastRealtimeSyncAt: string;
   };
@@ -190,10 +182,10 @@ export interface AppStateContextValue {
     openOrCreateThread: (input: OpenThreadInput) => string;
     sendChatMessage: (
       threadId: string,
-      opts: { text: string; includeProfileCard?: boolean },
+      opts: { text: string; includeProfileCard?: boolean }
     ) => void;
     markThreadRead: (threadId: string) => void;
-    submitScamReport: (input: Omit<ScamReport, "id" | "createdAt">) => void;
+    submitScamReport: (input: Omit<ScamReport, 'id' | 'createdAt'>) => void;
     resetDemoData: () => void;
   };
 }
@@ -205,26 +197,26 @@ const PERIOD_TO_SHIFT: Record<
   { label: string; days: Weekday[]; startHour: number; endHour: number }
 > = {
   morning: {
-    label: "Ca Sáng T2-T4-T6 (08:00 - 12:00)",
-    days: ["mon", "wed", "fri"],
+    label: 'Ca Sáng T2-T4-T6 (08:00 - 12:00)',
+    days: ['mon', 'wed', 'fri'],
     startHour: 8,
     endHour: 12,
   },
   afternoon: {
-    label: "Ca Chiều T3-T5 (13:30 - 17:30)",
-    days: ["tue", "thu"],
+    label: 'Ca Chiều T3-T5 (13:30 - 17:30)',
+    days: ['tue', 'thu'],
     startHour: 14,
     endHour: 18,
   },
   evening: {
-    label: "Ca Tối T2-T4-T6 (18:00 - 22:00)",
-    days: ["mon", "wed", "fri"],
+    label: 'Ca Tối T2-T4-T6 (18:00 - 22:00)',
+    days: ['mon', 'wed', 'fri'],
     startHour: 18,
     endHour: 22,
   },
   weekend: {
-    label: "Ca Cuối tuần T7-CN (08:30 - 12:30)",
-    days: ["sat", "sun"],
+    label: 'Ca Cuối tuần T7-CN (08:30 - 12:30)',
+    days: ['sat', 'sun'],
     startHour: 9,
     endHour: 13,
   },
@@ -233,7 +225,7 @@ const PERIOD_TO_SHIFT: Record<
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PersistedAppState>(loadInitialState);
   const [lastRealtimeSyncAt, setLastRealtimeSyncAt] = useState<string>(() =>
-    new Date().toISOString(),
+    new Date().toISOString()
   );
 
   useEffect(() => {
@@ -244,14 +236,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state]);
 
-  const dedupeResult = useMemo(
-    () => deduplicateAndFilterJobs(state.rawJobs),
-    [state.rawJobs],
-  );
+  const dedupeResult = useMemo(() => deduplicateAndFilterJobs(state.rawJobs), [state.rawJobs]);
 
   const unreadMessagesCount = useMemo(
     () => state.threads.reduce((sum, t) => sum + t.unreadCount, 0),
-    [state.threads],
+    [state.threads]
   );
 
   const setAnchorZone = useCallback((zoneId: string) => {
@@ -268,22 +257,18 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         idx === 0
           ? {
               ...job,
-              status:
-                job.status === "new"
-                  ? ("urgent" as const)
-                  : ("updated" as const),
+              status: job.status === 'new' ? ('urgent' as const) : ('new' as const),
               updatedAt: nowIso,
             }
-          : job,
+          : job
       );
       return { ...prev, rawJobs: nextRaw };
     });
     setLastRealtimeSyncAt(nowIso);
     notifications.show({
-      title: "Đã đồng bộ dữ liệu thời gian thực",
-      message:
-        "Trạng thái ghim tuyển dụng và danh sách tin hết hạn vừa được cập nhật.",
-      color: "success",
+      title: 'Đã đồng bộ dữ liệu thời gian thực',
+      message: 'Trạng thái ghim tuyển dụng và danh sách tin hết hạn vừa được cập nhật.',
+      color: 'success',
     });
   }, []);
 
@@ -312,27 +297,24 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, busySchedule: nextMap }));
   }, []);
 
-  const submitApplication = useCallback(
-    (input: SubmitApplicationInput): ApplicationRecord => {
-      const record: ApplicationRecord = {
-        ...input,
-        id: `app-${Date.now()}`,
-        submittedAt: new Date().toISOString(),
-        status: "submitted",
-      };
-      setState((prev) => ({
-        ...prev,
-        applications: [record, ...prev.applications],
-      }));
-      notifications.show({
-        title: "Nộp hồ sơ ứng tuyển thành công",
-        message: `Đã gửi đơn ứng tuyển vị trí ${input.jobTitle}. Bạn có thể theo dõi tại Lịch sử hoạt động.`,
-        color: "success",
-      });
-      return record;
-    },
-    [],
-  );
+  const submitApplication = useCallback((input: SubmitApplicationInput): ApplicationRecord => {
+    const record: ApplicationRecord = {
+      ...input,
+      id: `app-${Date.now()}`,
+      submittedAt: new Date().toISOString(),
+      status: 'submitted',
+    };
+    setState((prev) => ({
+      ...prev,
+      applications: [record, ...prev.applications],
+    }));
+    notifications.show({
+      title: 'Nộp hồ sơ ứng tuyển thành công',
+      message: `Đã gửi đơn ứng tuyển vị trí ${input.jobTitle}. Bạn có thể theo dõi tại Lịch sử hoạt động.`,
+      color: 'success',
+    });
+    return record;
+  }, []);
 
   const createCommunityPost = useCallback(
     (input: CreatePostInput): CommunityPost => {
@@ -361,120 +343,106 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           posts: nextPosts,
           profile: {
             ...prev.profile,
-            reputationPoints:
-              prev.profile.reputationPoints +
-              (input.type === "review" ? 10 : 5),
+            reputationPoints: prev.profile.reputationPoints + (input.type === 'review' ? 10 : 5),
           },
         };
       });
 
       notifications.show({
-        title: "Đã đăng bài lên cộng đồng",
-        message:
-          "Đóng góp của bạn giúp các sinh viên khác tìm việc an toàn hơn (+điểm uy tín).",
-        color: "brand",
+        title: 'Đã đăng bài lên cộng đồng',
+        message: 'Đóng góp của bạn giúp các sinh viên khác tìm việc an toàn hơn (+điểm uy tín).',
+        color: 'brand',
       });
       return post;
     },
-    [state.profile.fullName, state.profile.id, state.profile.university],
+    [state.profile.fullName, state.profile.id, state.profile.university]
   );
 
-  const shareTrustedJob = useCallback(
-    (input: ShareTrustedJobInput): CanonicalJob => {
-      const now = Date.now();
-      const nowIso = new Date(now).toISOString();
-      const expiresIso = new Date(now + 14 * 24 * 3600_000).toISOString();
-      const shouldCreateCompany = !input.companyId;
-      const resolvedCompanyId = input.companyId || `comp-shared-${now}`;
-      const newJobId = `job-shared-${now}`;
+  const shareTrustedJob = useCallback((input: ShareTrustedJobInput): CanonicalJob => {
+    const now = Date.now();
+    const nowIso = new Date(now).toISOString();
+    const expiresIso = new Date(now + 14 * 24 * 3600_000).toISOString();
+    const shouldCreateCompany = !input.companyId;
+    const resolvedCompanyId = input.companyId || `comp-shared-${now}`;
+    const newJobId = `job-shared-${now}`;
 
-      const shifts = input.shiftPeriods.map((period, index) => ({
-        id: `sh-shared-${now}-${index}`,
-        period,
-        ...PERIOD_TO_SHIFT[period],
-      }));
+    const shifts = input.shiftPeriods.map((period, index) => ({
+      id: `sh-shared-${now}-${index}`,
+      period,
+      ...PERIOD_TO_SHIFT[period],
+    }));
 
-      const newRawJob = {
-        id: newJobId,
-        dedupeKey: `shared-${(
-          input.companyId ||
-          input.newCompanyName ||
-          input.title
-        )
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")}`,
-        companyId: resolvedCompanyId,
-        title: input.title,
-        hourlyWageVnd: input.hourlyWageVnd,
-        payCycle: input.payCycle,
-        shifts,
-        description: input.description,
-        contractTerms: {
-          hasWrittenContract: true,
-          depositRequired: false,
-          holdIdCard: false,
-          probationNote:
-            "Tin uy tín do sinh viên trong cộng đồng chia sẻ và xác minh.",
-        },
-        sourceName: input.sourceName || "Sinh viên chia sẻ",
-        status: "new" as const,
-        postedAt: nowIso,
-        updatedAt: nowIso,
-        expiresAt: expiresIso,
-        editHistory: [
-          { at: nowIso, note: "Chia sẻ tin uy tín từ cửa sổ CS-02." },
-        ],
-      };
+    const newRawJob = {
+      id: newJobId,
+      dedupeKey: `shared-${(input.companyId || input.newCompanyName || input.title)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')}`,
+      companyId: resolvedCompanyId,
+      title: input.title,
+      hourlyWageVnd: input.hourlyWageVnd,
+      payCycle: input.payCycle,
+      shifts,
+      description: input.description,
+      contractTerms: {
+        hasWrittenContract: true,
+        depositRequired: false,
+        holdIdCard: false,
+        probationNote: 'Tin uy tín do sinh viên trong cộng đồng chia sẻ và xác minh.',
+      },
+      sourceName: input.sourceName || 'Sinh viên chia sẻ',
+      status: 'new' as const,
+      postedAt: nowIso,
+      updatedAt: nowIso,
+      expiresAt: expiresIso,
+      editHistory: [{ at: nowIso, note: 'Chia sẻ tin uy tín từ cửa sổ CS-02.' }],
+    };
 
-      setState((prev) => {
-        const nextCompanies = shouldCreateCompany
-          ? [
-              ...prev.companies,
-              {
-                id: resolvedCompanyId,
-                name: input.newCompanyName || "Cơ sở do sinh viên giới thiệu",
-                category: "Cộng đồng giới thiệu",
-                address: input.address,
-                district: input.district,
-                lat: input.lat,
-                lng: input.lng,
-                trustScore: 4.5,
-                reviewCount: 1,
-                mapVerified: true,
-                businessLicenseCode: null,
-                businessLicenseVerified: false,
-                warningFlag: null,
-                photos: [],
-              },
-            ]
-          : prev.companies;
-
-        return {
-          ...prev,
-          companies: nextCompanies,
-          rawJobs: [newRawJob, ...prev.rawJobs],
-          profile: {
-            ...prev.profile,
-            reputationPoints: prev.profile.reputationPoints + 15,
-          },
-        };
-      });
-
-      notifications.show({
-        title: "Đã chia sẻ tin tuyển dụng lên Bản đồ",
-        message:
-          "Tin đã được đưa qua bộ khử trùng lặp và gắn ghim mới trên MH-01 (+15 điểm uy tín).",
-        color: "success",
-      });
+    setState((prev) => {
+      const nextCompanies = shouldCreateCompany
+        ? [
+            ...prev.companies,
+            {
+              id: resolvedCompanyId,
+              name: input.newCompanyName || 'Cơ sở do sinh viên giới thiệu',
+              category: 'Cộng đồng giới thiệu',
+              address: input.address,
+              district: input.district,
+              lat: input.lat,
+              lng: input.lng,
+              trustScore: 4.5,
+              reviewCount: 1,
+              mapVerified: true,
+              businessLicenseCode: null,
+              businessLicenseVerified: false,
+              warningFlag: null,
+              photos: [],
+            },
+          ]
+        : prev.companies;
 
       return {
-        ...newRawJob,
-        mergedSources: [newRawJob.sourceName],
-        duplicateCount: 1,
+        ...prev,
+        companies: nextCompanies,
+        rawJobs: [newRawJob, ...prev.rawJobs],
+        profile: {
+          ...prev.profile,
+          reputationPoints: prev.profile.reputationPoints + 15,
+        },
       };
-    },
-    [],
-  );
+    });
+
+    notifications.show({
+      title: 'Đã chia sẻ tin tuyển dụng lên Bản đồ',
+      message: 'Tin đã được đưa qua bộ khử trùng lặp và gắn ghim mới trên MH-01 (+15 điểm uy tín).',
+      color: 'success',
+    });
+
+    return {
+      ...newRawJob,
+      mergedSources: [newRawJob.sourceName],
+      duplicateCount: 1,
+    };
+  }, []);
 
   const addPostComment = useCallback((postId: string, content: string) => {
     const trimmed = content.trim();
@@ -498,7 +466,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
                 },
               ],
             }
-          : post,
+          : post
       ),
     }));
   }, []);
@@ -525,7 +493,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       const existing = state.threads.find(
         (t) =>
           t.peerId === input.peerId &&
-          (!input.contextPostId || t.contextPostId === input.contextPostId),
+          (!input.contextPostId || t.contextPostId === input.contextPostId)
       );
       if (existing) {
         return existing.id;
@@ -550,30 +518,26 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       }));
       return newId;
     },
-    [state.threads],
+    [state.threads]
   );
 
   const sendChatMessage = useCallback(
-    (
-      threadId: string,
-      opts: { text: string; includeProfileCard?: boolean },
-    ) => {
+    (threadId: string, opts: { text: string; includeProfileCard?: boolean }) => {
       const trimmed = opts.text.trim();
       if (!trimmed && !opts.includeProfileCard) {
         return;
       }
       setState((prev) => {
-        const snapshot: ProfileCardSnapshot | undefined =
-          opts.includeProfileCard
-            ? {
-                fullName: prev.profile.fullName,
-                university: prev.profile.university,
-                major: prev.profile.major,
-                yearLabel: prev.profile.yearLabel,
-                skills: prev.profile.skills,
-                reputationPoints: prev.profile.reputationPoints,
-              }
-            : undefined;
+        const snapshot: ProfileCardSnapshot | undefined = opts.includeProfileCard
+          ? {
+              fullName: prev.profile.fullName,
+              university: prev.profile.university,
+              major: prev.profile.major,
+              yearLabel: prev.profile.yearLabel,
+              skills: prev.profile.skills,
+              reputationPoints: prev.profile.reputationPoints,
+            }
+          : undefined;
 
         return {
           ...prev,
@@ -586,74 +550,66 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
                     ...t.messages,
                     {
                       id: `msg-${Date.now()}`,
-                      sender: "me",
-                      text:
-                        trimmed ||
-                        "Mình gửi thẻ hồ sơ cá nhân để tiện trao đổi nhé!",
+                      sender: 'me',
+                      text: trimmed || 'Mình gửi thẻ hồ sơ cá nhân để tiện trao đổi nhé!',
                       sentAt: new Date().toISOString(),
                       profileCard: snapshot,
                     },
                   ],
                 }
-              : t,
+              : t
           ),
         };
       });
     },
-    [],
+    []
   );
 
   const markThreadRead = useCallback((threadId: string) => {
     setState((prev) => ({
       ...prev,
-      threads: prev.threads.map((t) =>
-        t.id === threadId ? { ...t, unreadCount: 0 } : t,
-      ),
+      threads: prev.threads.map((t) => (t.id === threadId ? { ...t, unreadCount: 0 } : t)),
     }));
   }, []);
 
-  const submitScamReport = useCallback(
-    (input: Omit<ScamReport, "id" | "createdAt">) => {
-      const report: ScamReport = {
-        ...input,
-        id: `rep-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-      };
-      setState((prev) => ({
-        ...prev,
-        reports: [report, ...prev.reports],
-        companies: prev.companies.map((c) =>
-          c.id === input.companyId
-            ? {
-                ...c,
-                warningFlag:
-                  c.warningFlag ||
-                  `Có báo cáo mới từ sinh viên: ${input.reasons.join(", ")}. Ban quản trị đang xác minh.`,
-              }
-            : c,
-        ),
-        profile: {
-          ...prev.profile,
-          reputationPoints: prev.profile.reputationPoints + 5,
-        },
-      }));
-      notifications.show({
-        title: "Đã gửi báo cáo vi phạm",
-        message: "Cảm ơn bạn đã bảo vệ cộng đồng sinh viên (+5 điểm uy tín).",
-        color: "warning",
-      });
-    },
-    [],
-  );
+  const submitScamReport = useCallback((input: Omit<ScamReport, 'id' | 'createdAt'>) => {
+    const report: ScamReport = {
+      ...input,
+      id: `rep-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setState((prev) => ({
+      ...prev,
+      reports: [report, ...prev.reports],
+      companies: prev.companies.map((c) =>
+        c.id === input.companyId
+          ? {
+              ...c,
+              warningFlag:
+                c.warningFlag ||
+                `Có báo cáo mới từ sinh viên: ${input.reasons.join(', ')}. Ban quản trị đang xác minh.`,
+            }
+          : c
+      ),
+      profile: {
+        ...prev.profile,
+        reputationPoints: prev.profile.reputationPoints + 5,
+      },
+    }));
+    notifications.show({
+      title: 'Đã gửi báo cáo vi phạm',
+      message: 'Cảm ơn bạn đã bảo vệ cộng đồng sinh viên (+5 điểm uy tín).',
+      color: 'warning',
+    });
+  }, []);
 
   const resetDemoData = useCallback(() => {
     const fresh = createSeedState();
     setState(fresh);
     notifications.show({
-      title: "Đã khôi phục dữ liệu mẫu",
-      message:
-        "Toàn bộ bản đồ, hồ sơ, lịch rảnh và hội thoại đã về trạng thái ban đầu.",
-      color: "brand",
+      title: 'Đã khôi phục dữ liệu mẫu',
+      message: 'Toàn bộ bản đồ, hồ sơ, lịch rảnh và hội thoại đã về trạng thái ban đầu.',
+      color: 'brand',
     });
   }, []);
 
@@ -707,7 +663,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       markThreadRead,
       submitScamReport,
       resetDemoData,
-    ],
+    ]
   );
 
   return <AppStateContext value={value}>{children}</AppStateContext>;
@@ -716,7 +672,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 export function useAppState(): AppStateContextValue {
   const ctx = use(AppStateContext);
   if (!ctx) {
-    throw new Error("useAppState must be used inside AppStateProvider");
+    throw new Error('useAppState must be used inside AppStateProvider');
   }
   return ctx;
 }

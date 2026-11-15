@@ -209,7 +209,7 @@ const columns = useMatches({ base: 1, sm: 2, lg: 4 });
 
 ## 4. Trạng thái Package mở rộng trong `client/package.json`
 
-Các package đã cài sẵn: `@mantine/form`, `@mantine/dropzone`, `@mantine/modals`, `@mantine/notifications`, `@tabler/icons-react`, `leaflet`. Chỉ chạy `yarn add` trong `client/` khi tính năng thực sự cần package chưa có:
+Các package đã cài sẵn: `@mantine/form`, `@mantine/dropzone`, `@mantine/modals`, `@mantine/notifications`, `@tabler/icons-react`, `@openmapvn/openmapvn-gl`. Chỉ chạy `yarn add` trong `client/` khi tính năng thực sự cần package chưa có:
 
 | Nhu cầu | Lệnh `yarn add` (trong `client/`) | Tích hợp bắt buộc | Tài liệu |
 |---|---|---|---|

@@ -2,7 +2,7 @@ import '@mantine/core/styles.css';
 import '@mantine/dropzone/styles.css';
 import '@mantine/notifications/styles.css';
 
-import 'leaflet/dist/leaflet.css';
+import '@openmapvn/openmapvn-gl/dist/maplibre-gl.css';
 import { MantineProvider } from '@mantine/core';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';

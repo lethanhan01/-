@@ -25,7 +25,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { JobLeafletMap, MapJobItem } from '../components/Map/JobLeafletMap';
+import { JobOpenMap, MapJobItem } from '../components/Map/JobOpenMap';
 import { TrustBadge } from '../components/TrustBadge/TrustBadge';
 import { ANCHOR_ZONES } from '../data/seedData';
 import {
@@ -295,7 +295,7 @@ export function JobsMapPage() {
                       { value: '2', label: 'Trong vòng 2 km' },
                       { value: '5', label: 'Trong vòng 5 km' },
                       { value: '10', label: 'Trong vòng 10 km' },
-                      { value: '0', label: 'Toàn TP.HCM' },
+                      { value: '0', label: 'Toàn khu vực Hà Nội' },
                     ]}
                     allowDeselect={false}
                   />
@@ -373,7 +373,7 @@ export function JobsMapPage() {
       <Grid gap="md">
         <Grid.Col span={{ base: 12, md: 7 }}>
           <Stack gap="md">
-            <JobLeafletMap
+            <JobOpenMap
               center={anchorZone}
               radiusKm={Number(radiusKm) > 0 ? Number(radiusKm) : null}
               items={filteredItems}
