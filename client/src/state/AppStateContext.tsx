@@ -1,7 +1,11 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react';
 import { notifications } from '@mantine/notifications';
 import { createSeedState } from '../data/seedData';
-import { deduplicateAndFilterJobs, DeduplicateResult } from '../domain/jobLogic';
+import {
+  deduplicateAndFilterJobs,
+  DeduplicateResult,
+  syncCompaniesWithPosts,
+} from '../domain/jobLogic';
 import {
   ApplicationRecord,
   BusyScheduleMap,
@@ -39,17 +43,44 @@ function mergeSeedCatalog(
 ): PersistedAppState {
   const existingCompanyIds = new Set(persistedState.companies.map((company) => company.id));
   const existingJobIds = new Set(persistedState.rawJobs.map((job) => job.id));
+  const seedPostsById = new Map(seedState.posts.map((post) => [post.id, post]));
+  const existingPostIds = new Set(persistedState.posts.map((post) => post.id));
+
+  const enrichedExistingPosts = persistedState.posts.map((post) => {
+    const seedPost = seedPostsById.get(post.id);
+    if (!seedPost) {
+      return post;
+    }
+    const mergedRatings =
+      post.criteriaRatings && seedPost.criteriaRatings
+        ? { ...seedPost.criteriaRatings, ...post.criteriaRatings }
+        : post.criteriaRatings;
+    return {
+      ...post,
+      criteriaRatings: mergedRatings,
+      evidenceImages:
+        post.evidenceImages.length > 0 ? post.evidenceImages : seedPost.evidenceImages,
+    };
+  });
+
+  const mergedPosts = [
+    ...enrichedExistingPosts,
+    ...seedState.posts.filter((post) => !existingPostIds.has(post.id)),
+  ];
+
+  const mergedCompanies = [
+    ...persistedState.companies,
+    ...seedState.companies.filter((company) => !existingCompanyIds.has(company.id)),
+  ];
 
   return {
     ...persistedState,
-    companies: [
-      ...persistedState.companies,
-      ...seedState.companies.filter((company) => !existingCompanyIds.has(company.id)),
-    ],
+    companies: syncCompaniesWithPosts(mergedCompanies, mergedPosts),
     rawJobs: [
       ...persistedState.rawJobs,
       ...seedState.rawJobs.filter((job) => !existingJobIds.has(job.id)),
     ],
+    posts: mergedPosts,
   };
 }
 
@@ -297,29 +328,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         comments: [],
       };
 
-      const ratings = input.criteriaRatings;
       setState((prev) => {
-        const nextCompanies =
-          input.type === 'review' && input.companyId && ratings
-            ? prev.companies.map((c) => {
-                if (c.id !== input.companyId) {
-                  return c;
-                }
-                const avgNew =
-                  (ratings.salaryTransparency + ratings.environment + ratings.scheduleFlexibility) /
-                  3;
-                const nextCount = c.reviewCount + 1;
-                const nextTrust = Number(
-                  ((c.trustScore * c.reviewCount + avgNew) / nextCount).toFixed(1)
-                );
-                return { ...c, reviewCount: nextCount, trustScore: nextTrust };
-              })
-            : prev.companies;
-
+        const nextPosts = [post, ...prev.posts];
         return {
           ...prev,
-          companies: nextCompanies,
-          posts: [post, ...prev.posts],
+          companies: syncCompaniesWithPosts(prev.companies, nextPosts),
+          posts: nextPosts,
           profile: {
             ...prev.profile,
             reputationPoints: prev.profile.reputationPoints + (input.type === 'review' ? 10 : 5),

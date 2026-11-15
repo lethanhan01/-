@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   IconAlertTriangle,
   IconArrowLeft,
@@ -13,10 +13,12 @@ import {
   IconPlayerPlay,
   IconSend,
   IconShieldCheck,
+  IconStarFilled,
 } from '@tabler/icons-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   Card,
@@ -26,6 +28,9 @@ import {
   Image,
   List,
   Modal,
+  Paper,
+  Progress,
+  Rating,
   SimpleGrid,
   Stack,
   Text,
@@ -34,11 +39,16 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { PostComposerModal } from '../components/Modals/PostComposerModal';
 import { ReportModal } from '../components/Modals/ReportModal';
 import { TrustBadge } from '../components/TrustBadge/TrustBadge';
 import { PHOTO_FALLBACK } from '../data/seedData';
 import {
+  CompanyRatingStats,
+  computeCompanyRatingStats,
   computeJobScheduleMatch,
+  computePostOverallRating,
+  CRITERIA_RATING_ITEMS,
   formatVnd,
   JOB_STATUS_META,
   JobScheduleMatch,
@@ -223,6 +233,312 @@ function WorkplaceMediaCard({
   );
 }
 
+type RatingFilterValue = 'all' | 'with-images' | '5' | '4' | '3' | '2' | '1';
+
+function CompanyRatingSummaryCard({
+  company,
+  stats,
+  onWriteReview,
+  onZoomImage,
+}: {
+  company: Company;
+  stats: CompanyRatingStats;
+  onWriteReview: () => void;
+  onZoomImage: (url: string) => void;
+}) {
+  const [filter, setFilter] = useState<RatingFilterValue>('all');
+
+  const withImagesCount = useMemo(
+    () => stats.reviewPosts.filter((post) => post.evidenceImages.length > 0).length,
+    [stats.reviewPosts]
+  );
+
+  const filteredReviews = useMemo(() => {
+    if (filter === 'all') {
+      return stats.reviewPosts;
+    }
+    if (filter === 'with-images') {
+      return stats.reviewPosts.filter((post) => post.evidenceImages.length > 0);
+    }
+    const targetStar = Number(filter);
+    return stats.reviewPosts.filter((post) => {
+      if (!post.criteriaRatings) {
+        return false;
+      }
+      const bucket = Math.min(
+        5,
+        Math.max(1, Math.round(computePostOverallRating(post.criteriaRatings)))
+      );
+      return bucket === targetStar;
+    });
+  }, [filter, stats.reviewPosts]);
+
+  return (
+    <Card component="section" aria-label="Đánh giá sao từ cộng đồng" p="md">
+      <Stack gap="md">
+        <Group justify="space-between" wrap="wrap" gap="xs">
+          <Group gap="xs">
+            <IconStarFilled size={18} />
+            <Title order={2} size="h4">
+              Đánh giá sao từ cộng đồng
+            </Title>
+          </Group>
+          <Button
+            size="xs"
+            variant="light"
+            leftSection={<IconMessagePlus size={14} />}
+            onClick={onWriteReview}
+          >
+            Viết đánh giá công ty
+          </Button>
+        </Group>
+
+        {stats.reviewCount === 0 ? (
+          <Paper withBorder p="md" bg="var(--app-bg-subtle)">
+            <Stack gap="xs" align="flex-start">
+              <Text size="sm" c="dimmed">
+                Chưa có bài đánh giá sao nào từ sinh viên cho {company.name}. Hãy là người đầu tiên
+                chia sẻ trải nghiệm thực tế!
+              </Text>
+              <Button size="xs" onClick={onWriteReview}>
+                Đánh giá ngay
+              </Button>
+            </Stack>
+          </Paper>
+        ) : (
+          <>
+            <Grid gap="md" align="center">
+              <Grid.Col span={{ base: 12, sm: 4 }}>
+                <Paper withBorder p="md" bg="var(--app-bg-subtle)">
+                  <Stack gap={6} align="center">
+                    <Group gap={4} align="baseline">
+                      <Text className={`${classes.ratingHeroScore} app-tabular`}>
+                        {stats.averageRating.toFixed(1)}
+                      </Text>
+                      <Text size="sm" c="dimmed">
+                        / 5
+                      </Text>
+                    </Group>
+                    <Rating
+                      value={stats.averageRating}
+                      fractions={2}
+                      readOnly
+                      size="md"
+                      color="warning"
+                    />
+                    <Text size="xs" c="dimmed" ta="center">
+                      Tổng hợp từ {stats.reviewCount} bài đánh giá
+                    </Text>
+                  </Stack>
+                </Paper>
+              </Grid.Col>
+
+              <Grid.Col span={{ base: 12, sm: 8 }}>
+                <Stack gap={6}>
+                  {stats.distribution.map((row) => (
+                    <Group key={row.stars} gap="xs" wrap="nowrap">
+                      <Text size="xs" fw={600} w={36} className="app-tabular">
+                        {row.stars} ★
+                      </Text>
+                      <Progress
+                        flex={1}
+                        value={row.percent}
+                        color="warning"
+                        size="sm"
+                        aria-label={`Tỷ lệ đánh giá ${row.stars} sao`}
+                      />
+                      <Text size="xs" c="dimmed" w={68} ta="right" className="app-tabular">
+                        {row.count} ({row.percent}%)
+                      </Text>
+                    </Group>
+                  ))}
+                </Stack>
+              </Grid.Col>
+            </Grid>
+
+            <Divider />
+
+            <Stack gap="xs">
+              <Text size="xs" fw={700} c="dimmed">
+                Thống kê trung bình theo 5 tiêu chí
+              </Text>
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
+                {stats.criteriaAverages.map((item) => (
+                  <Paper key={item.key} withBorder p="xs" bg="var(--app-bg-subtle)">
+                    <Group justify="space-between" gap="xs" wrap="nowrap">
+                      <Text size="xs" fw={600}>
+                        {item.label}
+                      </Text>
+                      <Group gap={6} wrap="nowrap">
+                        <Rating
+                          value={item.average}
+                          fractions={2}
+                          readOnly
+                          size="xs"
+                          color="warning"
+                        />
+                        <Text size="xs" fw={700} className="app-tabular">
+                          {item.average.toFixed(1)}/5
+                        </Text>
+                      </Group>
+                    </Group>
+                  </Paper>
+                ))}
+              </SimpleGrid>
+            </Stack>
+
+            <Divider />
+
+            <Group gap="xs" wrap="wrap">
+              <Button
+                size="xs"
+                variant={filter === 'all' ? 'filled' : 'light'}
+                onClick={() => setFilter('all')}
+              >
+                Tất cả ({stats.reviewCount})
+              </Button>
+              <Button
+                size="xs"
+                variant={filter === 'with-images' ? 'filled' : 'light'}
+                onClick={() => setFilter('with-images')}
+              >
+                Có ảnh ({withImagesCount})
+              </Button>
+              {stats.distribution.map((row) => (
+                <Button
+                  key={row.stars}
+                  size="xs"
+                  variant={filter === String(row.stars) ? 'filled' : 'light'}
+                  color="warning"
+                  onClick={() => setFilter(String(row.stars) as RatingFilterValue)}
+                >
+                  {row.stars} ★ ({row.count})
+                </Button>
+              ))}
+            </Group>
+
+            {filteredReviews.length === 0 ? (
+              <Text size="xs" c="dimmed">
+                Không có bài đánh giá nào khớp bộ lọc đang chọn.
+              </Text>
+            ) : (
+              <Stack gap="sm">
+                {filteredReviews.map((post) => {
+                  const overall = post.criteriaRatings
+                    ? computePostOverallRating(post.criteriaRatings)
+                    : 0;
+                  return (
+                    <Paper key={post.id} withBorder p="sm" bg="var(--app-bg-subtle)">
+                      <Stack gap="xs">
+                        <Group justify="space-between" wrap="wrap" gap="xs">
+                          <Group gap="xs">
+                            <Avatar size="sm" color="brand" radius="xl">
+                              {post.authorName.slice(0, 1)}
+                            </Avatar>
+                            <Stack gap={0}>
+                              <Group gap="xs">
+                                <Text size="xs" fw={700}>
+                                  {post.authorName}
+                                </Text>
+                                {post.verifiedWorker ? (
+                                  <Badge
+                                    size="xs"
+                                    color="success"
+                                    leftSection={<IconShieldCheck size={10} />}
+                                  >
+                                    Đã từng làm việc
+                                  </Badge>
+                                ) : null}
+                              </Group>
+                              <Text size="xs" c="dimmed">
+                                {post.authorUniversity} •{' '}
+                                {new Date(post.createdAt).toLocaleDateString('vi-VN')}
+                              </Text>
+                            </Stack>
+                          </Group>
+
+                          <Group gap={6}>
+                            <Rating
+                              value={overall}
+                              fractions={2}
+                              readOnly
+                              size="xs"
+                              color="warning"
+                            />
+                            <Badge
+                              size="sm"
+                              color="warning"
+                              leftSection={<IconStarFilled size={11} />}
+                              className="app-tabular"
+                            >
+                              {overall.toFixed(1)} / 5
+                            </Badge>
+                          </Group>
+                        </Group>
+
+                        <Text size="sm" fw={700}>
+                          {post.title}
+                        </Text>
+                        <Text size="xs">{post.content}</Text>
+
+                        {post.criteriaRatings ? (
+                          <Group gap="xs" wrap="wrap">
+                            {CRITERIA_RATING_ITEMS.map(({ key, label }) => {
+                              const value = post.criteriaRatings?.[key];
+                              return typeof value === 'number' ? (
+                                <Badge key={key} size="xs" color="neutral" className="app-tabular">
+                                  {label}: {value}★
+                                </Badge>
+                              ) : null;
+                            })}
+                          </Group>
+                        ) : null}
+
+                        {post.evidenceImages.length > 0 ? (
+                          <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="xs">
+                            {post.evidenceImages.map((imgUrl, idx) => (
+                              <UnstyledButton
+                                key={`${post.id}-img-${idx}`}
+                                onClick={() => onZoomImage(imgUrl)}
+                                className={classes.evidenceThumbButton}
+                                aria-label={`Phóng to ảnh đánh giá ${idx + 1} của ${post.authorName}`}
+                              >
+                                <Image
+                                  src={imgUrl}
+                                  fallbackSrc={PHOTO_FALLBACK}
+                                  h={90}
+                                  radius="sm"
+                                  fit="cover"
+                                  alt={`Ảnh minh chứng đánh giá ${idx + 1}`}
+                                />
+                              </UnstyledButton>
+                            ))}
+                          </SimpleGrid>
+                        ) : null}
+
+                        <Group justify="flex-end">
+                          <Button
+                            component={Link}
+                            to={`/community?postId=${post.id}&companyId=${company.id}`}
+                            size="xs"
+                            variant="subtle"
+                          >
+                            Xem chi tiết ở Cộng đồng
+                          </Button>
+                        </Group>
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            )}
+          </>
+        )}
+      </Stack>
+    </Card>
+  );
+}
+
 function CompanySidebarCards({
   jobId,
   company,
@@ -329,9 +645,21 @@ function CompanySidebarCards({
                 >
                   <Card p="xs" className={classes.interactiveCard}>
                     <Stack gap={4}>
-                      <Badge size="xs" color={postMeta.color}>
-                        {postMeta.label}
-                      </Badge>
+                      <Group justify="space-between" gap="xs">
+                        <Badge size="xs" color={postMeta.color}>
+                          {postMeta.label}
+                        </Badge>
+                        {post.criteriaRatings ? (
+                          <Badge
+                            size="xs"
+                            color="warning"
+                            leftSection={<IconStarFilled size={10} />}
+                            className="app-tabular"
+                          >
+                            {computePostOverallRating(post.criteriaRatings).toFixed(1)}
+                          </Badge>
+                        ) : null}
+                      </Group>
                       <Text size="xs" fw={700} lineClamp={2}>
                         {post.title}
                       </Text>
@@ -357,6 +685,8 @@ export function JobDetailPage() {
 
   const [reportOpened, { open: openReport, close: closeReport }] = useDisclosure(false);
   const [videoOpened, { open: openVideo, close: closeVideo }] = useDisclosure(false);
+  const [composerOpened, { open: openComposer, close: closeComposer }] = useDisclosure(false);
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
 
   const job = useMemo(
     () =>
@@ -378,6 +708,11 @@ export function JobDetailPage() {
   const companyPosts = useMemo(
     () => state.posts.filter((p) => p.companyId === company?.id),
     [state.posts, company?.id]
+  );
+
+  const ratingStats = useMemo(
+    () => (company ? computeCompanyRatingStats(company.id, state.posts) : null),
+    [company, state.posts]
   );
 
   const existingApplication = useMemo(
@@ -446,6 +781,15 @@ export function JobDetailPage() {
 
             <WorkplaceMediaCard company={company} onOpenVideo={openVideo} />
 
+            {ratingStats ? (
+              <CompanyRatingSummaryCard
+                company={company}
+                stats={ratingStats}
+                onWriteReview={openComposer}
+                onZoomImage={setZoomImageUrl}
+              />
+            ) : null}
+
             <Card p="md">
               <Stack gap="sm">
                 <Group gap="xs">
@@ -484,11 +828,30 @@ export function JobDetailPage() {
             company={company}
             companyPosts={companyPosts}
             existingApplication={existingApplication}
-            onWriteReview={() => void navigate(`/community?compose=review&companyId=${company.id}`)}
+            onWriteReview={openComposer}
             onOpenReport={openReport}
           />
         </Grid.Col>
       </Grid>
+
+      <PostComposerModal
+        opened={composerOpened}
+        onClose={closeComposer}
+        defaultMode="review"
+        prefillCompanyId={company.id}
+        onSharedJobCreated={(sharedJobId) => void navigate(`/jobs/${sharedJobId}`)}
+      />
+
+      <Modal
+        opened={Boolean(zoomImageUrl)}
+        onClose={() => setZoomImageUrl(null)}
+        size="lg"
+        title="Ảnh minh chứng thực tế"
+      >
+        {zoomImageUrl ? (
+          <Image src={zoomImageUrl} fallbackSrc={PHOTO_FALLBACK} radius="md" alt="Ảnh phóng to" />
+        ) : null}
+      </Modal>
 
       <ReportModal
         opened={reportOpened}

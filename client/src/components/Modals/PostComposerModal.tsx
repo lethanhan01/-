@@ -8,6 +8,7 @@ import {
   Checkbox,
   Group,
   Image,
+  Input,
   Modal,
   MultiSelect,
   NumberInput,
@@ -24,6 +25,7 @@ import { Dropzone, IMAGE_MIME_TYPE } from '@mantine/dropzone';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { ANCHOR_ZONES } from '../../data/seedData';
+import { CRITERIA_RATING_ITEMS } from '../../domain/jobLogic';
 import { ShiftPeriod } from '../../domain/types';
 import { useAppState } from '../../state/AppStateContext';
 import classes from './PostComposerModal.module.css';
@@ -96,6 +98,8 @@ interface CompanyOption {
   label: string;
 }
 
+const requireStarRating = (value: number) => (value < 1 ? 'Vui lòng chọn từ 1 đến 5 sao' : null);
+
 function ReviewComposerForm({
   companyOptions,
   defaultCompanyId,
@@ -114,17 +118,22 @@ function ReviewComposerForm({
       companyId: defaultCompanyId,
       title: '',
       content: '',
-      salaryTransparency: 5,
-      environment: 5,
-      scheduleFlexibility: 5,
-      benefits: 5,
-      jobQuality: 5,
+      salaryTransparency: 0,
+      environment: 0,
+      scheduleFlexibility: 0,
+      benefits: 0,
+      jobQuality: 0,
       verifiedWorker: true,
     },
     validate: {
       companyId: (v) => (!v ? 'Vui lòng chọn cơ sở' : null),
       title: (v) => (v.trim().length < 5 ? 'Tiêu đề tối thiểu 5 ký tự' : null),
       content: (v) => (v.trim().length < 15 ? 'Nội dung tối thiểu 15 ký tự' : null),
+      salaryTransparency: requireStarRating,
+      environment: requireStarRating,
+      scheduleFlexibility: requireStarRating,
+      benefits: requireStarRating,
+      jobQuality: requireStarRating,
     },
   });
 
@@ -184,49 +193,19 @@ function ReviewComposerForm({
           {...reviewForm.getInputProps('title')}
         />
 
-        <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
-          <Stack gap={4}>
-            <Text size="xs" fw={600}>
-              Minh bạch lương
-            </Text>
-            <Rating
-              key={reviewForm.key('salaryTransparency')}
-              {...reviewForm.getInputProps('salaryTransparency')}
-            />
-          </Stack>
-          <Stack gap={4}>
-            <Text size="xs" fw={600}>
-              Môi trường
-            </Text>
-            <Rating
-              key={reviewForm.key('environment')}
-              {...reviewForm.getInputProps('environment')}
-            />
-          </Stack>
-          <Stack gap={4}>
-            <Text size="xs" fw={600}>
-              Linh hoạt lịch
-            </Text>
-            <Rating
-              key={reviewForm.key('scheduleFlexibility')}
-              {...reviewForm.getInputProps('scheduleFlexibility')}
-            />
-          </Stack>
-          <Stack gap={4}>
-            <Text size="xs" fw={600}>
-              Chế độ & Đãi ngộ
-            </Text>
-            <Rating key={reviewForm.key('benefits')} {...reviewForm.getInputProps('benefits')} />
-          </Stack>
-          <Stack gap={4}>
-            <Text size="xs" fw={600}>
-              Chất lượng công việc
-            </Text>
-            <Rating
-              key={reviewForm.key('jobQuality')}
-              {...reviewForm.getInputProps('jobQuality')}
-            />
-          </Stack>
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+          {CRITERIA_RATING_ITEMS.map(({ key, label }) => (
+            <Input.Wrapper key={key} withAsterisk label={label} error={reviewForm.errors[key]}>
+              <Group gap="xs" mt={4}>
+                <Rating
+                  color="warning"
+                  getSymbolLabel={(star) => `${label}: ${star} sao`}
+                  key={reviewForm.key(key)}
+                  {...reviewForm.getInputProps(key)}
+                />
+              </Group>
+            </Input.Wrapper>
+          ))}
         </SimpleGrid>
 
         <Textarea

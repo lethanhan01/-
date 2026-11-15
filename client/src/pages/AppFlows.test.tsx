@@ -1,4 +1,4 @@
-import { render, screen, userEvent } from '@test-utils';
+import { render, screen, userEvent, within } from '@test-utils';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
@@ -171,4 +171,59 @@ describe('Student Part-Time App Flows', () => {
       (await screen.findAllByText(/Thẻ hồ sơ: Nguyễn Minh Anh/i)).length
     ).toBeGreaterThanOrEqual(1);
   });
+
+  it('renders company star rating stats on /jobs/job-coop-1 and updates after submitting a required-star review', async () => {
+    const user = userEvent.setup();
+    renderAppRoute('/jobs/job-coop-1');
+
+    const ratingSection = screen.getByRole('region', { name: /Đánh giá sao từ cộng đồng/i });
+    expect(screen.getByText('4.4 (3 đánh giá)')).toBeInTheDocument();
+    expect(within(ratingSection).getByText(/Tổng hợp từ 3 bài đánh giá/i)).toBeInTheDocument();
+    expect(
+      within(ratingSection).getByText(
+        /Trải nghiệm 4 tháng soạn đơn online tại Co\.opXtra Linh Trung/i
+      )
+    ).toBeInTheDocument();
+
+    await user.click(within(ratingSection).getByRole('button', { name: /4 ★ \(1\)/i }));
+    expect(
+      within(ratingSection).queryByText(
+        /Trải nghiệm 4 tháng soạn đơn online tại Co\.opXtra Linh Trung/i
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      within(ratingSection).getByText(/Lương 34k\/h ổn định, giờ cao điểm cuối tuần đơn hơi nhiều/i)
+    ).toBeInTheDocument();
+
+    await user.click(within(ratingSection).getByRole('button', { name: /Tất cả \(3\)/i }));
+    await user.click(within(ratingSection).getByRole('button', { name: /Viết đánh giá công ty/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByLabelText(/^Tiêu đề/i), 'Đánh giá mới Co.opXtra');
+    await user.type(
+      within(dialog).getByLabelText(/Nội dung đánh giá/i),
+      'Đồng nghiệp hỗ trợ rất nhiệt tình, trả lương đúng thứ 6.'
+    );
+    await user.click(within(dialog).getByRole('button', { name: /Đăng đánh giá/i }));
+    expect(await within(dialog).findAllByText(/Vui lòng chọn từ 1 đến 5 sao/i)).toHaveLength(5);
+
+    const selectStar = async (label: string, star: number) => {
+      const radio = within(dialog).getByRole('radio', { name: `${label}: ${star} sao` });
+      const starLabel = dialog.querySelector(`label[for="${radio.id}"]`);
+      if (!starLabel) {
+        throw new Error(`Missing label for ${label}: ${star}`);
+      }
+      await user.click(starLabel);
+    };
+
+    await selectStar('Minh bạch lương', 5);
+    await selectStar('Môi trường', 5);
+    await selectStar('Linh hoạt lịch', 5);
+    await selectStar('Chế độ & Đãi ngộ', 5);
+    await selectStar('Chất lượng công việc', 5);
+    await user.click(within(dialog).getByRole('button', { name: /Đăng đánh giá/i }));
+
+    expect(await within(ratingSection).findByText('Đánh giá mới Co.opXtra')).toBeInTheDocument();
+    expect(within(ratingSection).getByText(/Tổng hợp từ 4 bài đánh giá/i)).toBeInTheDocument();
+  }, 15000);
 });

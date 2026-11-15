@@ -1,3 +1,4 @@
+import { syncCompaniesWithPosts } from '../domain/jobLogic';
 import { PersistedAppState, StudentAnchorZone } from '../domain/types';
 
 export const ANCHOR_ZONES: StudentAnchorZone[] = [
@@ -16,7 +17,7 @@ function offsetIso(baseMs: number, offsetHours: number): string {
 }
 
 export function createSeedState(nowMs: number = Date.now()): PersistedAppState {
-  return {
+  const baseState: PersistedAppState = {
     schemaVersion: 1,
     profile: {
       id: 'student-me',
@@ -1166,6 +1167,8 @@ export function createSeedState(nowMs: number = Date.now()): PersistedAppState {
           salaryTransparency: 5,
           environment: 5,
           scheduleFlexibility: 5,
+          benefits: 5,
+          jobQuality: 5,
         },
         evidenceImages: [
           'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=700&q=80',
@@ -1202,7 +1205,9 @@ export function createSeedState(nowMs: number = Date.now()): PersistedAppState {
         title: 'Cảnh báo: Cơ sở Sự kiện Ánh Dương đòi cọc 450k tiền đồng phục',
         content:
           'Mình mới tới phỏng vấn ở hẻm 45 Kha Vạn Cân hôm qua. Tin đăng ghi 65k/h nhưng tới nơi chỉ cho làm hợp đồng CTV miệng và bắt đóng 450.000đ tiền áo + thẻ nhân viên mới được xếp ca. Mọi người né gấp!',
-        evidenceImages: [],
+        evidenceImages: [
+          'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=700&q=80',
+        ],
         helpfulCount: 51,
         createdAt: offsetIso(nowMs, -14),
         comments: [
@@ -1231,8 +1236,12 @@ export function createSeedState(nowMs: number = Date.now()): PersistedAppState {
           salaryTransparency: 5,
           environment: 5,
           scheduleFlexibility: 4,
+          benefits: 5,
+          jobQuality: 5,
         },
-        evidenceImages: [],
+        evidenceImages: [
+          'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=700&q=80',
+        ],
         helpfulCount: 22,
         createdAt: offsetIso(nowMs, -72),
         comments: [],
@@ -1248,7 +1257,9 @@ export function createSeedState(nowMs: number = Date.now()): PersistedAppState {
         title: 'Hỏi kinh nghiệm làm CTV đóng gói Co.opXtra Linh Trung có nặng không?',
         content:
           'Mình thấy tin trả lương theo tuần thứ 6 khá ổn nhưng không rõ đơn hàng online có phải khiêng thùng nước nặng nhiều không? Ai từng làm cho mình xin review với.',
-        evidenceImages: [],
+        evidenceImages: [
+          'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=700&q=80',
+        ],
         helpfulCount: 9,
         createdAt: offsetIso(nowMs, -9),
         comments: [
@@ -1277,10 +1288,90 @@ export function createSeedState(nowMs: number = Date.now()): PersistedAppState {
           salaryTransparency: 5,
           environment: 4,
           scheduleFlexibility: 5,
+          benefits: 4,
+          jobQuality: 5,
         },
-        evidenceImages: [],
+        evidenceImages: [
+          'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=700&q=80',
+        ],
         helpfulCount: 18,
         createdAt: offsetIso(nowMs, -60),
+        comments: [],
+      },
+      {
+        id: 'post-coop-1',
+        type: 'review',
+        companyId: 'comp-coopxtra',
+        authorId: 'peer-nam',
+        authorName: 'Hoàng Nhật Nam',
+        authorUniversity: 'ĐH Công nghệ Thông tin - ĐHQG TP.HCM',
+        verifiedWorker: true,
+        title: 'Trải nghiệm 4 tháng soạn đơn online tại Co.opXtra Linh Trung',
+        content:
+          'Chuyển khoản đều đặn mỗi thứ 6 hàng tuần, không trễ lương bao giờ. Trong siêu thị có máy lạnh mát mẻ, có xe đẩy soạn hàng nên không bị quá sức, hợp đồng CTV ký rõ từ ngày đầu.',
+        criteriaRatings: {
+          salaryTransparency: 5,
+          environment: 5,
+          scheduleFlexibility: 4,
+          benefits: 5,
+          jobQuality: 4,
+        },
+        evidenceImages: [
+          'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=700&q=80',
+          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=700&q=80',
+        ],
+        helpfulCount: 27,
+        createdAt: offsetIso(nowMs, -18),
+        comments: [],
+      },
+      {
+        id: 'post-coop-2',
+        type: 'review',
+        companyId: 'comp-coopxtra',
+        authorId: 'peer-duyen',
+        authorName: 'Trần Thị Mỹ Duyên',
+        authorUniversity: 'ĐH Kinh tế - Luật - ĐHQG TP.HCM',
+        verifiedWorker: true,
+        title: 'Ca chiều cuối tuần Co.opXtra Linh Trung khá linh hoạt cho lịch học',
+        content:
+          'Quản lý quầy online duyệt đổi ca nhanh khi sinh viên có lịch thi giữa kỳ. Máy quét mã vạch dễ dùng, chỉ mất khoảng 1 buổi đầu làm quen quy trình đóng gói.',
+        criteriaRatings: {
+          salaryTransparency: 5,
+          environment: 4,
+          scheduleFlexibility: 5,
+          benefits: 4,
+          jobQuality: 5,
+        },
+        evidenceImages: [
+          'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=700&q=80',
+        ],
+        helpfulCount: 16,
+        createdAt: offsetIso(nowMs, -30),
+        comments: [],
+      },
+      {
+        id: 'post-coop-3',
+        type: 'review',
+        companyId: 'comp-coopxtra',
+        authorId: 'peer-khoi',
+        authorName: 'Lê Minh Khôi',
+        authorUniversity: 'ĐH Giao thông Vận tải TP.HCM',
+        verifiedWorker: true,
+        title: 'Lương 34k/h ổn định, giờ cao điểm cuối tuần đơn hơi nhiều',
+        content:
+          'Nhìn chung môi trường uy tín, không thu phí đồng phục hay giữ giấy tờ. Chỉ có chiều thứ 7 và chủ nhật lượng đơn online tăng cao nên cần thao tác nhanh tay một chút.',
+        criteriaRatings: {
+          salaryTransparency: 4,
+          environment: 4,
+          scheduleFlexibility: 4,
+          benefits: 4,
+          jobQuality: 4,
+        },
+        evidenceImages: [
+          'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&w=700&q=80',
+        ],
+        helpfulCount: 11,
+        createdAt: offsetIso(nowMs, -52),
         comments: [],
       },
     ],
@@ -1361,5 +1452,10 @@ export function createSeedState(nowMs: number = Date.now()): PersistedAppState {
       },
     ],
     reports: [],
+  };
+
+  return {
+    ...baseState,
+    companies: syncCompaniesWithPosts(baseState.companies, baseState.posts),
   };
 }

@@ -6,6 +6,7 @@ import {
   IconSearch,
   IconSend,
   IconShieldCheck,
+  IconStarFilled,
   IconThumbUp,
 } from '@tabler/icons-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -30,6 +31,7 @@ import {
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
 import { ComposerMode, PostComposerModal } from '../components/Modals/PostComposerModal';
 import { PHOTO_FALLBACK } from '../data/seedData';
+import { computePostOverallRating, CRITERIA_RATING_ITEMS } from '../domain/jobLogic';
 import { CommunityPost, Company, PostType } from '../domain/types';
 import { useAppState } from '../state/AppStateContext';
 import classes from './CommunityFeedPage.module.css';
@@ -118,42 +120,40 @@ function CommunityPostCard({
         <Text size="sm">{post.content}</Text>
 
         {post.criteriaRatings ? (
-          <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="xs">
-            <Group gap="xs">
-              <Text size="xs" c="dimmed">
-                Minh bạch lương:
-              </Text>
-              <Rating value={post.criteriaRatings.salaryTransparency} readOnly size="xs" />
+          <Stack gap="xs">
+            <Group gap="xs" align="center">
+              <Badge
+                color="warning"
+                leftSection={<IconStarFilled size={12} />}
+                className="app-tabular"
+              >
+                {computePostOverallRating(post.criteriaRatings).toFixed(1)} / 5 sao
+              </Badge>
+              <Rating
+                value={computePostOverallRating(post.criteriaRatings)}
+                fractions={2}
+                readOnly
+                size="sm"
+                color="warning"
+              />
             </Group>
-            <Group gap="xs">
-              <Text size="xs" c="dimmed">
-                Môi trường:
-              </Text>
-              <Rating value={post.criteriaRatings.environment} readOnly size="xs" />
-            </Group>
-            <Group gap="xs">
-              <Text size="xs" c="dimmed">
-                Linh hoạt lịch:
-              </Text>
-              <Rating value={post.criteriaRatings.scheduleFlexibility} readOnly size="xs" />
-            </Group>
-            {typeof post.criteriaRatings.benefits === 'number' ? (
-              <Group gap="xs">
-                <Text size="xs" c="dimmed">
-                  Chế độ & Đãi ngộ:
-                </Text>
-                <Rating value={post.criteriaRatings.benefits} readOnly size="xs" />
-              </Group>
-            ) : null}
-            {typeof post.criteriaRatings.jobQuality === 'number' ? (
-              <Group gap="xs">
-                <Text size="xs" c="dimmed">
-                  Chất lượng công việc:
-                </Text>
-                <Rating value={post.criteriaRatings.jobQuality} readOnly size="xs" />
-              </Group>
-            ) : null}
-          </SimpleGrid>
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="xs">
+              {CRITERIA_RATING_ITEMS.map(({ key, label }) => {
+                const value = post.criteriaRatings?.[key];
+                return typeof value === 'number' ? (
+                  <Group key={key} gap="xs">
+                    <Text size="xs" c="dimmed">
+                      {label}:
+                    </Text>
+                    <Rating value={value} readOnly size="xs" color="warning" />
+                    <Text size="xs" fw={600} className="app-tabular">
+                      {value}/5
+                    </Text>
+                  </Group>
+                ) : null;
+              })}
+            </SimpleGrid>
+          </Stack>
         ) : null}
 
         {post.evidenceImages.length > 0 ? (
