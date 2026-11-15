@@ -2,6 +2,7 @@ import { render, screen, userEvent } from '@test-utils';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
+import { createSeedState } from '../data/seedData';
 import { AppStateProvider } from '../state/AppStateContext';
 import { CommunityFeedPage } from './CommunityFeedPage';
 import { JobApplyPage } from './JobApplyPage';
@@ -10,8 +11,10 @@ import { JobsMapPage } from './JobsMapPage';
 import { MessagesPage } from './MessagesPage';
 import { ProfileSchedulePage } from './ProfileSchedulePage';
 
-function renderAppRoute(initialEntry: string) {
-  window.localStorage.clear();
+function renderAppRoute(initialEntry: string, clearStorage = true) {
+  if (clearStorage) {
+    window.localStorage.clear();
+  }
   return render(
     <ModalsProvider>
       <Notifications />
@@ -32,16 +35,32 @@ function renderAppRoute(initialEntry: string) {
 }
 
 describe('Student Part-Time App Flows', () => {
-  it('displays deduplication metrics and filters matching jobs on MH-01', async () => {
+  it('opens the map filters and filters matching jobs on MH-01', async () => {
     const user = userEvent.setup();
     renderAppRoute('/');
 
-    expect(screen.getByText(/Bản đồ Việc làm Thêm \(MH-01\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Đã khử trùng lặp/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Bản đồ Việc làm Thêm \(MH-01\)/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Đã khử trùng lặp/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sắp xếp theo độ khớp lịch rảnh/i)).not.toBeInTheDocument();
 
+    await user.click(screen.getByRole('button', { name: /Mở bộ lọc/i }));
     const switchEl = screen.getByLabelText(/Chỉ hiện việc khớp lịch rảnh/i);
     await user.click(switchEl);
     expect(screen.getByText(/Danh sách việc làm/i)).toBeInTheDocument();
+  });
+
+  it('merges new seed jobs into an existing saved state', () => {
+    const savedState = createSeedState();
+    savedState.companies = savedState.companies.filter(
+      (company) => !company.id.startsWith('comp-hust-')
+    );
+    savedState.rawJobs = savedState.rawJobs.filter((job) => !job.id.startsWith('job-hust-'));
+    savedState.profile.anchorZoneId = 'zone-bach-khoa-hn';
+    window.localStorage.setItem('svjob_state_v1', JSON.stringify(savedState));
+
+    renderAppRoute('/', false);
+
+    expect(screen.getByText('Danh sách việc làm (10)')).toBeInTheDocument();
   });
 
   it('validates scam report modal (CS-01) and submits report on MH-03', async () => {
@@ -118,7 +137,7 @@ describe('Student Part-Time App Flows', () => {
     );
     await user.click(screen.getByRole('button', { name: /Chia sẻ lên Bản đồ/i }));
 
-    expect(await screen.findByText(/Bản đồ Việc làm Thêm \(MH-01\)/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Danh sách việc làm/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Nhân viên Pha chế Ca Tối/i).length).toBeGreaterThanOrEqual(1);
   });
 

@@ -7,10 +7,10 @@ describe('jobLogic', () => {
     const seed = createSeedState(now);
     const result = deduplicateAndFilterJobs(seed.rawJobs, now);
 
-    // Seed has 10 raw jobs: 1 expired, 2 duplicate pairs (Highlands & Circle K) => 7 canonical jobs
+    // Seed has 20 raw jobs: 1 expired, 2 duplicate pairs (Highlands & Circle K) => 17 canonical jobs
     expect(result.expiredHiddenCount).toBe(1);
     expect(result.mergedDuplicatesCount).toBe(2);
-    expect(result.jobs).toHaveLength(7);
+    expect(result.jobs).toHaveLength(17);
 
     const highlands = result.jobs.find((j) => j.dedupeKey === 'highlands-nvh-barista');
     expect(highlands).toBeDefined();

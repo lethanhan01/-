@@ -19,6 +19,40 @@ import {
 
 const STORAGE_KEY = 'svjob_state_v1';
 
+function isPersistedAppState(value: Partial<PersistedAppState>): value is PersistedAppState {
+  return (
+    value.schemaVersion === 1 &&
+    Boolean(value.profile) &&
+    Boolean(value.busySchedule) &&
+    Array.isArray(value.companies) &&
+    Array.isArray(value.rawJobs) &&
+    Array.isArray(value.posts) &&
+    Array.isArray(value.threads) &&
+    Array.isArray(value.applications) &&
+    Array.isArray(value.reports)
+  );
+}
+
+function mergeSeedCatalog(
+  persistedState: PersistedAppState,
+  seedState: PersistedAppState
+): PersistedAppState {
+  const existingCompanyIds = new Set(persistedState.companies.map((company) => company.id));
+  const existingJobIds = new Set(persistedState.rawJobs.map((job) => job.id));
+
+  return {
+    ...persistedState,
+    companies: [
+      ...persistedState.companies,
+      ...seedState.companies.filter((company) => !existingCompanyIds.has(company.id)),
+    ],
+    rawJobs: [
+      ...persistedState.rawJobs,
+      ...seedState.rawJobs.filter((job) => !existingJobIds.has(job.id)),
+    ],
+  };
+}
+
 function loadInitialState(): PersistedAppState {
   if (typeof window === 'undefined') {
     return createSeedState();
@@ -29,8 +63,8 @@ function loadInitialState(): PersistedAppState {
       return createSeedState();
     }
     const parsed = JSON.parse(raw) as Partial<PersistedAppState>;
-    if (parsed?.schemaVersion === 1 && parsed.profile && Array.isArray(parsed.rawJobs)) {
-      return parsed as PersistedAppState;
+    if (isPersistedAppState(parsed)) {
+      return mergeSeedCatalog(parsed, createSeedState());
     }
   } catch {
     // Fallback to clean seed data if localStorage is corrupted.
