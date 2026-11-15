@@ -58,7 +58,7 @@ function CommunityPostCard({
   onToggleHelpful,
   onMessageAuthor,
   onZoomImage,
-}: {
+}: Readonly<{
   post: CommunityPost;
   company: Company | undefined;
   jobIdForCompany: string | undefined;
@@ -70,7 +70,7 @@ function CommunityPostCard({
   onToggleHelpful: () => void;
   onMessageAuthor: () => void;
   onZoomImage: (url: string) => void;
-}) {
+}>) {
   return (
     <Card p="md" className={classes.postCard} mod={{ focused: isFocused }}>
       <Stack gap="sm">
@@ -197,7 +197,7 @@ function CommunityPostCard({
               leftSection={<IconMessageCircle size={14} />}
               onClick={onMessageAuthor}
             >
-              Nhắn tin hỏi kinh nghiệm (MH-05)
+              Nhắn tin
             </Button>
           ) : null}
         </Group>
@@ -206,7 +206,7 @@ function CommunityPostCard({
 
         <Stack gap="xs">
           <Text size="xs" fw={600} c="dimmed">
-            Bình luận & Hỏi đáp ({post.comments.length})
+            Bình luận ({post.comments.length})
           </Text>
 
           {post.comments.map((cmt) => (
@@ -332,10 +332,13 @@ export function CommunityFeedPage() {
       return;
     }
     const companyName = post.companyId ? companyMap.get(post.companyId)?.name : undefined;
+    const peerRoleLabel = companyName
+      ? `${post.authorUniversity} • ${companyName}`
+      : post.authorUniversity;
     const threadId = actions.openOrCreateThread({
       peerId: post.authorId,
       peerName: post.authorName,
-      peerRoleLabel: `${post.authorUniversity}${companyName ? ` • ${companyName}` : ''}`,
+      peerRoleLabel,
       peerHasReviewed: post.type === 'review',
       contextPostId: post.id,
       contextCompanyId: post.companyId,

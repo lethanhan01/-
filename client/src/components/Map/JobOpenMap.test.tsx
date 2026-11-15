@@ -21,7 +21,13 @@ const mockState = vi.hoisted(() => ({
   addSourceCalls: [] as Array<{ id: string; source: object }>,
   addLayerCalls: [] as Array<{ id: string; type: string }>,
   popupSetTextCalls: [] as string[],
-  markers: [] as Array<{ element?: HTMLElement; lngLat?: [number, number]; removed: boolean }>,
+  markers: [] as Array<{
+    element?: HTMLElement;
+    anchor?: string;
+    subpixelPositioning?: boolean;
+    lngLat?: [number, number];
+    removed: boolean;
+  }>,
   eventHandlers: {} as Record<string, Array<() => void>>,
   shouldThrowOnMapInit: false,
   isStyleLoaded: false,
@@ -97,10 +103,21 @@ vi.mock('@openmapvn/openmapvn-gl', () => {
   }
 
   class MockMarker {
-    private record: { element?: HTMLElement; lngLat?: [number, number]; removed: boolean };
+    private record: {
+      element?: HTMLElement;
+      anchor?: string;
+      subpixelPositioning?: boolean;
+      lngLat?: [number, number];
+      removed: boolean;
+    };
 
-    constructor(opts?: { element?: HTMLElement }) {
-      this.record = { element: opts?.element, removed: false };
+    constructor(opts?: { element?: HTMLElement; anchor?: string; subpixelPositioning?: boolean }) {
+      this.record = {
+        element: opts?.element,
+        anchor: opts?.anchor,
+        subpixelPositioning: opts?.subpixelPositioning,
+        removed: false,
+      };
     }
 
     getElement = vi.fn(() => {
@@ -196,7 +213,7 @@ describe('JobOpenMap', () => {
     vi.unstubAllEnvs();
   });
 
-  it('centers in Hanoi even if passed a non-Hanoi center and excludes updated pins from map and legend', () => {
+  it('centers in Hanoi even if passed a non-Hanoi center and renders all job statuses with subpixelPositioning', () => {
     const items = buildSampleItems();
 
     render(
@@ -211,16 +228,25 @@ describe('JobOpenMap', () => {
 
     expect(mockState.mapInitOptions[0]?.center).toEqual([105.8431, 21.0056]);
 
-    // 1 user location marker + 3 job markers (new, urgent, expiring); 'updated' is excluded
-    expect(mockState.markers).toHaveLength(4);
+    // 1 user location marker + 4 job markers (new, urgent, updated, expiring)
+    expect(mockState.markers).toHaveLength(5);
+    for (const marker of mockState.markers) {
+      expect(marker.anchor).toBe('center');
+      expect(marker.subpixelPositioning).toBe(true);
+    }
     const jobMarkers = mockState.markers.filter((m) => m.element?.dataset.status);
-    expect(jobMarkers.map((m) => m.element?.dataset.status)).toEqual(['new', 'urgent', 'expiring']);
+    expect(jobMarkers.map((m) => m.element?.dataset.status)).toEqual([
+      'new',
+      'urgent',
+      'updated',
+      'expiring',
+    ]);
 
     expect(screen.getByText('Mới đăng')).toBeInTheDocument();
     expect(screen.getByText('Tuyển gấp')).toBeInTheDocument();
+    expect(screen.getByText('Đã cập nhật')).toBeInTheDocument();
     expect(screen.getByText('Sắp hết hạn')).toBeInTheDocument();
     expect(screen.getByText('Vị trí của bạn')).toBeInTheDocument();
-    expect(screen.queryByText('Đã cập nhật')).not.toBeInTheDocument();
   });
 
   it('calls onSelectJob, preserves marker DOM elements on selection change, and pans map', async () => {
@@ -246,7 +272,7 @@ describe('JobOpenMap', () => {
     const initialJobMarkerEls = mockState.markers
       .filter((m) => m.element?.dataset.status)
       .map((m) => m.element);
-    expect(initialJobMarkerEls).toHaveLength(3);
+    expect(initialJobMarkerEls).toHaveLength(4);
 
     const firstPin = initialJobMarkerEls[0];
     if (!firstPin) {
@@ -275,13 +301,13 @@ describe('JobOpenMap', () => {
     const activeJobMarkers = mockState.markers.filter(
       (m) => !m.removed && m.element?.dataset.status
     );
-    expect(activeJobMarkers).toHaveLength(3);
+    expect(activeJobMarkers).toHaveLength(4);
     expect(activeJobMarkers[0]?.element).toBe(firstPin);
     expect(activeJobMarkers[1]?.element?.dataset.selected).toBe('true');
     expect(mockState.panToCalls).toContainEqual([items[1].company.lng, items[1].company.lat]);
   });
 
-  it('shows current user GPS pin and flies to it when clicking the recenter button', async () => {
+  it('keeps user pin fixed at zone center on mount and updates to GPS when clicking the recenter button', async () => {
     const user = userEvent.setup();
     const items = buildSampleItems();
 
@@ -322,11 +348,10 @@ describe('JobOpenMap', () => {
       />
     );
 
-    const userMarkers = mockState.markers.filter(
+    const initialUserMarkers = mockState.markers.filter(
       (m) => m.element?.getAttribute('aria-label') === 'Vị trí hiện tại của bạn'
     );
-    const latestUserMarker = userMarkers.at(-1);
-    expect(latestUserMarker?.lngLat).toEqual([105.8542, 21.0285]);
+    expect(initialUserMarkers.at(-1)?.lngLat).toEqual([105.8431, 21.0056]);
 
     await user.click(screen.getByRole('button', { name: /Phóng to bản đồ/i }));
     await user.click(screen.getByRole('button', { name: /Thu nhỏ bản đồ/i }));
@@ -334,6 +359,10 @@ describe('JobOpenMap', () => {
     expect(mockState.zoomOutCalls).toBe(1);
 
     await user.click(screen.getByRole('button', { name: /Quay về vị trí hiện tại/i }));
+    const updatedUserMarkers = mockState.markers.filter(
+      (m) => m.element?.getAttribute('aria-label') === 'Vị trí hiện tại của bạn'
+    );
+    expect(updatedUserMarkers.at(-1)?.lngLat).toEqual([105.8542, 21.0285]);
     expect(mockState.flyToCalls).toContainEqual(
       expect.objectContaining({ center: [105.8542, 21.0285] })
     );
@@ -449,7 +478,7 @@ describe('JobOpenMap', () => {
     expect(screen.getByText(/Bản đồ ghim việc làm quanh ĐH Bách khoa Hà Nội/i)).toBeInTheDocument();
   });
 
-  it('excludes updated jobs and preserves legend in WebGL-unavailable fallback mode', () => {
+  it('includes updated jobs and preserves legend in WebGL-unavailable fallback mode', () => {
     mockState.shouldThrowOnMapInit = true;
     const items = buildSampleItems();
 
@@ -469,8 +498,8 @@ describe('JobOpenMap', () => {
     );
 
     expect(screen.getByText(/Bản đồ ghim việc làm quanh ĐH Bách khoa Hà Nội/i)).toBeInTheDocument();
-    expect(screen.queryByText(new RegExp(items[2].company.name, 'i'))).not.toBeInTheDocument();
+    expect(screen.getByText(new RegExp(items[2].company.name, 'i'))).toBeInTheDocument();
     expect(screen.getByText('Vị trí của bạn')).toBeInTheDocument();
-    expect(screen.queryByText('Đã cập nhật')).not.toBeInTheDocument();
+    expect(screen.getByText('Đã cập nhật')).toBeInTheDocument();
   });
 });

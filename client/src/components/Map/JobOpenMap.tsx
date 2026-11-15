@@ -52,7 +52,7 @@ const HANOI_DEFAULT_CENTER: StudentAnchorZone = {
   lng: 105.8431,
 };
 
-const MAP_VISIBLE_STATUSES = ['new', 'urgent', 'expiring'] as const;
+const MAP_VISIBLE_STATUSES = ['new', 'urgent', 'updated', 'expiring'] as const;
 const RADIUS_SOURCE_ID = 'job-radius-source';
 const RADIUS_FILL_LAYER_ID = 'job-radius-fill';
 const RADIUS_LINE_LAYER_ID = 'job-radius-line';
@@ -202,10 +202,7 @@ export function JobOpenMap({
 }: Readonly<JobOpenMapProps>) {
   const computedColorScheme = useComputedColorScheme('light');
   const resolvedCenter = useMemo(() => resolveHanoiCenter(center), [center]);
-  const visibleItems = useMemo(
-    () => items.filter((item) => item.job.status !== 'updated'),
-    [items]
-  );
+  const visibleItems = items;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<OpenMap | null>(null);
@@ -229,11 +226,14 @@ export function JobOpenMap({
 
   const [mapFailed, setMapFailed] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [userLocation, setUserLocation] = useState<UserLocationState>(() => ({
-    lat: resolvedCenter.lat,
-    lng: resolvedCenter.lng,
-    source: 'fallback',
-  }));
+  const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const userLocation: UserLocationState = useMemo(
+    () =>
+      gpsLocation
+        ? { lat: gpsLocation.lat, lng: gpsLocation.lng, source: 'gps' }
+        : { lat: resolvedCenter.lat, lng: resolvedCenter.lng, source: 'fallback' },
+    [gpsLocation, resolvedCenter.lat, resolvedCenter.lng]
+  );
 
   const requestCurrentPosition = useCallback((flyAfter: boolean) => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -243,12 +243,11 @@ export function JobOpenMap({
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const next: UserLocationState = {
+        const next = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-          source: 'gps',
         };
-        setUserLocation(next);
+        setGpsLocation(next);
         setIsLocating(false);
 
         if (flyAfter && mapRef.current) {
@@ -338,10 +337,6 @@ export function JobOpenMap({
   }, []);
 
   useEffect(() => {
-    requestCurrentPosition(false);
-  }, [requestCurrentPosition]);
-
-  useEffect(() => {
     const map = mapRef.current;
     if (!map) {
       return;
@@ -393,7 +388,11 @@ export function JobOpenMap({
       }
     });
 
-    userMarkerRef.current = new Marker({ element: el, anchor: 'center' })
+    userMarkerRef.current = new Marker({
+      element: el,
+      anchor: 'center',
+      subpixelPositioning: true,
+    })
       .setLngLat([userLocation.lng, userLocation.lat])
       .addTo(map);
   }, [userLocation, resolvedCenter.label]);
@@ -431,7 +430,11 @@ export function JobOpenMap({
         }
       });
 
-      const marker = new Marker({ element: el, anchor: 'center' })
+      const marker = new Marker({
+        element: el,
+        anchor: 'center',
+        subpixelPositioning: true,
+      })
         .setLngLat([item.company.lng, item.company.lat])
         .addTo(map);
       jobMarkersRef.current.push(marker);
@@ -507,7 +510,7 @@ export function JobOpenMap({
 
   if (mapFailed) {
     return (
-      <Stack gap="xs">
+      <Stack gap="xs" className={classes.mapRoot}>
         <Paper withBorder p="md" radius="md">
           <Stack gap="xs">
             <Group justify="space-between" wrap="wrap">
@@ -536,7 +539,7 @@ export function JobOpenMap({
   }
 
   return (
-    <Stack gap="xs">
+    <Stack gap="xs" className={classes.mapRoot}>
       <Box className={classes.mapWrapper}>
         {/* @openmapvn/openmapvn-gl requires a direct DOM container node to mount WebGL canvas and markers */}
         <Box

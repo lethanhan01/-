@@ -1,6 +1,6 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react';
 import { notifications } from '@mantine/notifications';
-import { createSeedState } from '../data/seedData';
+import { ANCHOR_ZONES, createSeedState } from '../data/seedData';
 import {
   deduplicateAndFilterJobs,
   DeduplicateResult,
@@ -68,19 +68,36 @@ function mergeSeedCatalog(
     ...seedState.posts.filter((post) => !existingPostIds.has(post.id)),
   ];
 
+  const seedCompaniesById = new Map(seedState.companies.map((company) => [company.id, company]));
+  const normalizedExistingCompanies = persistedState.companies.map((company) => {
+    const seedCompany = seedCompaniesById.get(company.id);
+    if (!seedCompany) {
+      return company;
+    }
+    return {
+      ...company,
+      name: seedCompany.name,
+      address: seedCompany.address,
+      district: seedCompany.district,
+      lat: seedCompany.lat,
+      lng: seedCompany.lng,
+    };
+  });
+
   const mergedCompanies = [
-    ...persistedState.companies,
+    ...normalizedExistingCompanies,
     ...seedState.companies.filter((company) => !existingCompanyIds.has(company.id)),
   ];
+
+  const validAnchorZoneIds = new Set(ANCHOR_ZONES.map((zone) => zone.id));
 
   return {
     ...persistedState,
     profile: {
       ...persistedState.profile,
-      anchorZoneId:
-        persistedState.profile.anchorZoneId === 'zone-bach-khoa-hn'
-          ? persistedState.profile.anchorZoneId
-          : 'zone-bach-khoa-hn',
+      anchorZoneId: validAnchorZoneIds.has(persistedState.profile.anchorZoneId)
+        ? persistedState.profile.anchorZoneId
+        : 'zone-bach-khoa-hn',
     },
     companies: syncCompaniesWithPosts(mergedCompanies, mergedPosts),
     rawJobs: [
@@ -222,7 +239,7 @@ const PERIOD_TO_SHIFT: Record<
   },
 };
 
-export function AppStateProvider({ children }: { children: React.ReactNode }) {
+export function AppStateProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [state, setState] = useState<PersistedAppState>(loadInitialState);
   const [lastRealtimeSyncAt, setLastRealtimeSyncAt] = useState<string>(() =>
     new Date().toISOString()
@@ -361,7 +378,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const shareTrustedJob = useCallback((input: ShareTrustedJobInput): CanonicalJob => {
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
-    const expiresIso = new Date(now + 14 * 24 * 3600_000).toISOString();
+    const expiresIso = new Date(now + 14 * 24 * 3_600_000).toISOString();
     const shouldCreateCompany = !input.companyId;
     const resolvedCompanyId = input.companyId || `comp-shared-${now}`;
     const newJobId = `job-shared-${now}`;

@@ -47,20 +47,21 @@ describe('Student Part-Time App Flows', () => {
     const switchEl = screen.getByLabelText(/Chỉ hiện việc khớp lịch rảnh/i);
     await user.click(switchEl);
     expect(screen.getByText(/Danh sách việc làm/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /^Chi tiết$/i }).length).toBeGreaterThan(0);
   });
 
-  it('merges new seed jobs and normalizes legacy non-Hanoi anchorZoneId into Hanoi', () => {
+  it('merges new seed jobs, syncs company coordinates, and normalizes legacy anchorZoneId into Hanoi', () => {
     const savedState = createSeedState();
-    savedState.companies = savedState.companies.filter(
-      (company) => !company.id.startsWith('comp-hust-')
-    );
+    savedState.companies = savedState.companies
+      .filter((company) => !company.id.startsWith('comp-hust-'))
+      .map((company) => ({ ...company, lat: 10.875, lng: 106.801 }));
     savedState.rawJobs = savedState.rawJobs.filter((job) => !job.id.startsWith('job-hust-'));
-    savedState.profile.anchorZoneId = 'zone-dhqg';
+    savedState.profile.anchorZoneId = 'legacy-unknown-zone';
     window.localStorage.setItem('svjob_state_v1', JSON.stringify(savedState));
 
     renderAppRoute('/', false);
 
-    expect(screen.getByText('Danh sách việc làm (10)')).toBeInTheDocument();
+    expect(screen.getByText('Danh sách việc làm (17)')).toBeInTheDocument();
   });
 
   it('validates scam report modal (CS-01) and submits report on MH-03', async () => {

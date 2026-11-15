@@ -74,11 +74,11 @@ function JobOverviewCard({
   job,
   company,
   scheduleMatch,
-}: {
+}: Readonly<{
   job: CanonicalJob | RawJobListing;
   company: Company;
   scheduleMatch: JobScheduleMatch | null;
-}) {
+}>) {
   return (
     <Card p="md">
       <Stack gap="sm">
@@ -109,12 +109,12 @@ function JobOverviewCard({
         <Divider />
 
         <Title order={2} size="h4">
-          Mô tả nhiệm vụ
+          Mô tả
         </Title>
         <Text size="sm">{job.description}</Text>
 
         <Title order={2} size="h4" mt="xs">
-          Ca làm việc & Đối chiếu lịch rảnh của bạn
+          Ca làm việc
         </Title>
         <Stack gap="xs">
           {scheduleMatch?.shiftDetails.map(({ shift, fitsSchedule, conflicts }) => (
@@ -139,7 +139,7 @@ function JobOverviewCard({
         </Stack>
 
         <Title order={2} size="h4" mt="xs">
-          Điều kiện hợp đồng minh bạch
+          Tính minh bạch
         </Title>
         <List size="sm" spacing="xs">
           <List.Item>
@@ -170,16 +170,16 @@ function JobOverviewCard({
 function WorkplaceMediaCard({
   company,
   onOpenVideo,
-}: {
+}: Readonly<{
   company: Company;
   onOpenVideo: () => void;
-}) {
+}>) {
   const hasMedia = company.photos.length > 0 || Boolean(company.videoPreview);
   return (
     <Card p="md">
       <Stack gap="sm">
         <Title order={2} size="h4">
-          Hình ảnh & Video thực tế nơi làm việc
+          Hình ảnh thực tế
         </Title>
         {hasMedia ? (
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
@@ -240,12 +240,12 @@ function CompanyRatingSummaryCard({
   stats,
   onWriteReview,
   onZoomImage,
-}: {
+}: Readonly<{
   company: Company;
   stats: CompanyRatingStats;
   onWriteReview: () => void;
   onZoomImage: (url: string) => void;
-}) {
+}>) {
   const [filter, setFilter] = useState<RatingFilterValue>('all');
 
   const withImagesCount = useMemo(
@@ -280,7 +280,7 @@ function CompanyRatingSummaryCard({
           <Group gap="xs">
             <IconStarFilled size={18} />
             <Title order={2} size="h4">
-              Đánh giá sao từ cộng đồng
+              Đánh giá
             </Title>
           </Group>
           <Button
@@ -546,14 +546,14 @@ function CompanySidebarCards({
   existingApplication,
   onWriteReview,
   onOpenReport,
-}: {
+}: Readonly<{
   jobId: string;
   company: Company;
   companyPosts: CommunityPost[];
   existingApplication: ApplicationRecord | undefined;
   onWriteReview: () => void;
   onOpenReport: () => void;
-}) {
+}>) {
   return (
     <Stack gap="md">
       <Card p="md">
@@ -617,7 +617,7 @@ function CompanySidebarCards({
         <Stack gap="sm">
           <Group justify="space-between">
             <Title order={2} size="h4">
-              Bài viết cộng đồng ({companyPosts.length})
+              Bài viết ({companyPosts.length})
             </Title>
             <Button
               component={Link}
@@ -795,7 +795,7 @@ export function JobDetailPage() {
                 <Group gap="xs">
                   <IconHistory size={18} />
                   <Title order={2} size="h4">
-                    Lịch sử chỉnh sửa tin tuyển dụng
+                    Lịch sử tuyển dụng
                   </Title>
                 </Group>
                 {job.editHistory.length === 0 ? (

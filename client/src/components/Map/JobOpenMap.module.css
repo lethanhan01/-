@@ -1,14 +1,29 @@
+.mapRoot {
+  height: 100%;
+  min-height: 0;
+}
+
 .mapWrapper {
   position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .mapContainer {
   width: 100%;
+  flex: 1;
   height: rem(480px);
   border-radius: var(--mantine-radius-md);
   border: 1px solid var(--mantine-color-default-border);
   overflow: hidden;
   z-index: 1;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    height: 100%;
+    min-height: 0;
+  }
 
   @media (max-width: $mantine-breakpoint-sm) {
     height: rem(340px);
@@ -25,69 +40,110 @@
 }
 
 .jobPin {
-  width: rem(20px);
-  height: rem(20px);
-  border-radius: 50%;
-  border: rem(2.5px) solid var(--mantine-color-body);
-  box-shadow:
-    0 0 0 rem(1px) var(--mantine-color-default-border),
-    var(--mantine-shadow-sm);
+  width: rem(28px);
+  height: rem(28px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
   cursor: pointer;
   padding: 0;
-  transition:
-    transform 150ms ease,
-    border-color 150ms ease;
 
-  @mixin hover {
-    transform: scale(1.12);
+  &::after {
+    content: '';
+    width: rem(20px);
+    height: rem(20px);
+    border-radius: 50%;
+    border: rem(2.5px) solid var(--mantine-color-body);
+    background-color: var(--mantine-color-brand-filled);
+    box-shadow:
+      0 0 0 rem(1px) var(--mantine-color-default-border),
+      var(--mantine-shadow-sm);
+    transition:
+      transform 150ms ease,
+      border-color 150ms ease;
   }
 
-  &[data-status='new'] {
+  @mixin hover {
+    &::after {
+      transform: scale(1.14);
+    }
+  }
+
+  &[data-status='new']::after {
     background-color: var(--mantine-color-brand-filled);
   }
 
-  &[data-status='urgent'] {
+  &[data-status='urgent']::after {
     background-color: var(--mantine-color-warning-filled);
   }
 
-  &[data-status='expiring'] {
+  &[data-status='updated']::after {
+    background-color: var(--mantine-color-success-filled);
+  }
+
+  &[data-status='expiring']::after {
     background-color: var(--mantine-color-danger-filled);
   }
 
   &[data-selected='true'] {
-    width: rem(26px);
-    height: rem(26px);
-    border-width: rem(3px);
-    border-color: var(--mantine-color-text);
     z-index: 3;
+
+    &::after {
+      transform: scale(1.28);
+      border-width: rem(3px);
+      border-color: var(--mantine-color-text);
+    }
   }
 
   &:focus-visible {
-    outline: rem(2px) solid var(--mantine-primary-color-filled);
-    outline-offset: rem(2px);
+    outline: none;
+
+    &::after {
+      outline: rem(2px) solid var(--mantine-primary-color-filled);
+      outline-offset: rem(2px);
+    }
   }
 }
 
 .userLocationPin {
-  width: rem(18px);
-  height: rem(18px);
-  border-radius: 50%;
-  border: rem(3px) solid var(--mantine-color-body);
-  background-color: var(--mantine-color-success-filled);
-  box-shadow:
-    0 0 0 rem(6px) var(--mantine-color-success-light),
-    var(--mantine-shadow-sm);
+  width: rem(28px);
+  height: rem(28px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
   cursor: pointer;
   padding: 0;
-  transition: transform 150ms ease;
+
+  &::after {
+    content: '';
+    width: rem(18px);
+    height: rem(18px);
+    border-radius: 50%;
+    border: rem(3px) solid var(--mantine-color-body);
+    background-color: var(--mantine-color-success-filled);
+    box-shadow:
+      0 0 0 rem(6px) var(--mantine-color-success-light),
+      var(--mantine-shadow-sm);
+    transition: transform 150ms ease;
+  }
 
   @mixin hover {
-    transform: scale(1.12);
+    &::after {
+      transform: scale(1.14);
+    }
   }
 
   &:focus-visible {
-    outline: rem(2px) solid var(--mantine-color-success-filled);
-    outline-offset: rem(4px);
+    outline: none;
+
+    &::after {
+      outline: rem(2px) solid var(--mantine-color-success-filled);
+      outline-offset: rem(4px);
+    }
   }
 }
 
@@ -105,6 +161,10 @@
 
   &[data-status='urgent'] {
     background-color: var(--mantine-color-warning-filled);
+  }
+
+  &[data-status='updated'] {
+    background-color: var(--mantine-color-success-filled);
   }
 
   &[data-status='expiring'] {

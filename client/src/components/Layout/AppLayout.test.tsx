@@ -54,8 +54,8 @@ describe('AppLayout', () => {
 
     expect(screen.queryByText('Đã đăng nhập')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Bản đồ việc làm' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Mạng xã hội & Đánh giá' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Hồ sơ & Lịch rảnh' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mạng xã hội' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Hồ sơ' }).length).toBeGreaterThanOrEqual(1);
   });
 
   it('opens topbar user menu with profile, schedule, history and logout actions', async () => {

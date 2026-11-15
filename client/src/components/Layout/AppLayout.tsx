@@ -38,19 +38,39 @@ import classes from './AppLayout.module.css';
 const NAV_ITEMS = [
   { label: 'Bản đồ việc làm', shortLabel: 'Bản đồ', to: '/', icon: IconMapPin },
   {
-    label: 'Mạng xã hội & Đánh giá',
+    label: 'Mạng xã hội',
     shortLabel: 'Cộng đồng',
     to: '/community',
     icon: IconUsers,
   },
   //{ label: 'Nhắn tin Cộng đồng', shortLabel: 'Nhắn tin', to: '/messages', icon: IconMessageCircle },
   {
-    label: 'Hồ sơ & Lịch rảnh',
+    label: 'Hồ sơ',
     shortLabel: 'Hồ sơ',
     to: '/profile',
     icon: IconUser,
   },
 ] as const;
+
+const PROFILE_MENU_ITEMS = [
+  { tab: 'profile', label: 'Hồ sơ', icon: IconUser },
+  { tab: 'schedule', label: 'Lịch rảnh', icon: IconCalendarTime },
+  { tab: 'history', label: 'Lịch sử hoạt động', icon: IconHistory },
+] as const;
+
+function isRouteActive(pathname: string, to: string): boolean {
+  if (to === '/') {
+    return pathname === '/' || pathname.startsWith('/jobs');
+  }
+  return pathname.startsWith(to);
+}
+
+function resolveProfileTab(pathname: string, search: string): string | null {
+  if (!pathname.startsWith('/profile')) {
+    return null;
+  }
+  return new URLSearchParams(search).get('tab') || 'profile';
+}
 
 export function AppLayout() {
   const location = useLocation();
@@ -63,19 +83,12 @@ export function AppLayout() {
     defaultValue: false,
   });
 
-  const displayName = currentUser ? currentUser.fullName : state.profile.fullName;
-  const displayUniversity = currentUser ? currentUser.university : state.profile.university;
+  const activeUser = currentUser ?? state.profile;
+  const displayName = activeUser.fullName;
+  const displayUniversity = activeUser.university;
   const avatarInitial = displayName.trim().slice(0, 1).toUpperCase() || 'U';
-  const currentProfileTab = location.pathname.startsWith('/profile')
-    ? new URLSearchParams(location.search).get('tab') || 'profile'
-    : null;
-
-  const isRouteActive = (to: string) => {
-    if (to === '/') {
-      return location.pathname === '/' || location.pathname.startsWith('/jobs');
-    }
-    return location.pathname.startsWith(to);
-  };
+  const currentProfileTab = resolveProfileTab(location.pathname, location.search);
+  const isDark = colorScheme === 'dark';
 
   const handleLogout = () => {
     logout();
@@ -142,16 +155,14 @@ export function AppLayout() {
               </ActionIcon>
             </Tooltip>
 
-            <Tooltip
-              label={colorScheme === 'dark' ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'}
-            >
+            <Tooltip label={isDark ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'}>
               <ActionIcon
                 variant="default"
                 size="md"
                 aria-label="Đổi chế độ màu sáng tối"
                 onClick={() => toggleColorScheme()}
               >
-                {colorScheme === 'dark' ? <IconSun size={17} /> : <IconMoon size={17} />}
+                {isDark ? <IconSun size={17} /> : <IconMoon size={17} />}
               </ActionIcon>
             </Tooltip>
 
@@ -192,33 +203,21 @@ export function AppLayout() {
 
                 <Menu.Divider />
 
-                <Menu.Item
-                  component={Link}
-                  to="/profile?tab=profile"
-                  leftSection={<IconUser size={15} />}
-                  c={currentProfileTab === 'profile' ? 'brand' : undefined}
-                  fw={currentProfileTab === 'profile' ? 600 : undefined}
-                >
-                  Hồ sơ
-                </Menu.Item>
-                <Menu.Item
-                  component={Link}
-                  to="/profile?tab=schedule"
-                  leftSection={<IconCalendarTime size={15} />}
-                  c={currentProfileTab === 'schedule' ? 'brand' : undefined}
-                  fw={currentProfileTab === 'schedule' ? 600 : undefined}
-                >
-                  Lịch rảnh
-                </Menu.Item>
-                <Menu.Item
-                  component={Link}
-                  to="/profile?tab=history"
-                  leftSection={<IconHistory size={15} />}
-                  c={currentProfileTab === 'history' ? 'brand' : undefined}
-                  fw={currentProfileTab === 'history' ? 600 : undefined}
-                >
-                  Lịch sử hoạt động
-                </Menu.Item>
+                {PROFILE_MENU_ITEMS.map(({ tab, label, icon: ItemIcon }) => {
+                  const isActiveTab = currentProfileTab === tab;
+                  return (
+                    <Menu.Item
+                      key={tab}
+                      component={Link}
+                      to={`/profile?tab=${tab}`}
+                      leftSection={<ItemIcon size={15} />}
+                      c={isActiveTab ? 'brand' : undefined}
+                      fw={isActiveTab ? 600 : undefined}
+                    >
+                      {label}
+                    </Menu.Item>
+                  );
+                })}
 
                 <Menu.Divider />
 
@@ -236,7 +235,7 @@ export function AppLayout() {
           <Stack gap={6}>
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
-              const active = isRouteActive(item.to);
+              const active = isRouteActive(location.pathname, item.to);
               return (
                 <Tooltip
                   key={item.to}
@@ -308,7 +307,7 @@ export function AppLayout() {
         <Group h="100%" grow gap={0}>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const active = isRouteActive(item.to);
+            const active = isRouteActive(location.pathname, item.to);
             return (
               <UnstyledButton
                 key={item.to}

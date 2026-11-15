@@ -1,3 +1,15 @@
+.leftPanel,
+.rightPanel {
+  @media (min-width: $mantine-breakpoint-md) {
+    height: calc(100dvh - rem(62px) - var(--mantine-spacing-md) - var(--mantine-spacing-xl));
+    min-height: rem(520px);
+  }
+}
+
+.rightPanel {
+  min-height: 0;
+}
+
 .selectableCard {
   transition: border-color 150ms ease;
 
@@ -16,5 +28,19 @@
 }
 
 .detailCard {
+  flex-shrink: 0;
   border-color: var(--mantine-primary-color-filled);
+}
+
+.listHeader {
+  flex-shrink: 0;
+}
+
+.jobListScroll {
+  flex: 1;
+  min-height: 0;
+
+  @media (max-width: $mantine-breakpoint-md) {
+    max-height: rem(460px);
+  }
 }

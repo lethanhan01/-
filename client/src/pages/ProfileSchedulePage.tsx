@@ -108,7 +108,7 @@ function ProfileTabPanel({
         <Box component="form" onSubmit={form.onSubmit(onSaveProfile)} noValidate>
           <Stack gap="sm">
             <Title order={2} size="h4">
-              Thông tin tự động điền ứng tuyển
+              Thông tin ứng tuyển
             </Title>
             <TextInput
               withAsterisk
@@ -161,7 +161,7 @@ function ProfileTabPanel({
               {...form.getInputProps('bio')}
             />
             <Group justify="flex-end">
-              <Button type="submit">Lưu hồ sơ chuẩn</Button>
+              <Button type="submit">Lưu</Button>
             </Group>
           </Stack>
         </Box>
@@ -607,7 +607,7 @@ export function ProfileSchedulePage() {
       <Tabs value={activeTab} onChange={(tab) => setSearchParams({ tab: tab || 'profile' })}>
         <Tabs.List>
           <Tabs.Tab value="profile" leftSection={<IconUser size={16} />}>
-            Hồ sơ chuẩn dùng chung
+            Hồ sơ
           </Tabs.Tab>
           <Tabs.Tab value="schedule" leftSection={<IconCalendarTime size={16} />}>
             Thời khóa biểu & Giờ rảnh
