@@ -45,6 +45,8 @@ interface ReviewFormValues {
   salaryTransparency: number;
   environment: number;
   scheduleFlexibility: number;
+  benefits: number;
+  jobQuality: number;
   verifiedWorker: boolean;
 }
 
@@ -115,12 +117,14 @@ function ReviewComposerForm({
       salaryTransparency: 5,
       environment: 5,
       scheduleFlexibility: 5,
+      benefits: 5,
+      jobQuality: 5,
       verifiedWorker: true,
     },
     validate: {
-      companyId: (v) => (!v ? 'Vui lòng chọn cơ sở tuyển dụng' : null),
+      companyId: (v) => (!v ? 'Vui lòng chọn cơ sở' : null),
       title: (v) => (v.trim().length < 5 ? 'Tiêu đề tối thiểu 5 ký tự' : null),
-      content: (v) => (v.trim().length < 15 ? 'Nội dung đánh giá tối thiểu 15 ký tự' : null),
+      content: (v) => (v.trim().length < 15 ? 'Nội dung tối thiểu 15 ký tự' : null),
     },
   });
 
@@ -150,6 +154,8 @@ function ReviewComposerForm({
         salaryTransparency: values.salaryTransparency,
         environment: values.environment,
         scheduleFlexibility: values.scheduleFlexibility,
+        benefits: values.benefits,
+        jobQuality: values.jobQuality,
       },
       evidenceImages: evidenceImages.map((img) => img.url),
     });
@@ -164,7 +170,7 @@ function ReviewComposerForm({
         <Select
           withAsterisk
           searchable
-          label="Cơ sở tuyển dụng được gắn thẻ"
+          label="Cơ sở"
           data={companyOptions}
           key={reviewForm.key('companyId')}
           {...reviewForm.getInputProps('companyId')}
@@ -172,13 +178,13 @@ function ReviewComposerForm({
 
         <TextInput
           withAsterisk
-          label="Tiêu đề đánh giá"
-          placeholder="Ví dụ: Trải nghiệm 3 tháng làm ca tối tại..."
+          label="Tiêu đề"
+          placeholder="Ví dụ: Trải nghiệm 3 tháng làm ca tối..."
           key={reviewForm.key('title')}
           {...reviewForm.getInputProps('title')}
         />
 
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+        <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
           <Stack gap={4}>
             <Text size="xs" fw={600}>
               Minh bạch lương
@@ -190,7 +196,7 @@ function ReviewComposerForm({
           </Stack>
           <Stack gap={4}>
             <Text size="xs" fw={600}>
-              Môi trường làm việc
+              Môi trường
             </Text>
             <Rating
               key={reviewForm.key('environment')}
@@ -199,25 +205,41 @@ function ReviewComposerForm({
           </Stack>
           <Stack gap={4}>
             <Text size="xs" fw={600}>
-              Linh hoạt lịch học
+              Linh hoạt lịch
             </Text>
             <Rating
               key={reviewForm.key('scheduleFlexibility')}
               {...reviewForm.getInputProps('scheduleFlexibility')}
             />
           </Stack>
+          <Stack gap={4}>
+            <Text size="xs" fw={600}>
+              Chế độ & Đãi ngộ
+            </Text>
+            <Rating key={reviewForm.key('benefits')} {...reviewForm.getInputProps('benefits')} />
+          </Stack>
+          <Stack gap={4}>
+            <Text size="xs" fw={600}>
+              Chất lượng công việc
+            </Text>
+            <Rating
+              key={reviewForm.key('jobQuality')}
+              {...reviewForm.getInputProps('jobQuality')}
+            />
+          </Stack>
         </SimpleGrid>
 
         <Textarea
           withAsterisk
-          label="Trải nghiệm thực tế (lương thực nhận, quản lý, hợp đồng)"
+          label="Nội dung đánh giá"
+          placeholder="Chia sẻ ngắn gọn về lương, quản lý, hợp đồng..."
           minRows={3}
           key={reviewForm.key('content')}
           {...reviewForm.getInputProps('content')}
         />
 
         <Checkbox
-          label="Tôi đã từng làm việc hoặc phỏng vấn trực tiếp tại cơ sở này"
+          label="Đã từng làm việc / phỏng vấn tại đây"
           key={reviewForm.key('verifiedWorker')}
           {...reviewForm.getInputProps('verifiedWorker', { type: 'checkbox' })}
         />
@@ -225,7 +247,7 @@ function ReviewComposerForm({
         <Stack gap="xs">
           <Group justify="space-between">
             <Text size="xs" fw={600}>
-              Ảnh minh chứng (tùy chọn, tối đa 3 ảnh)
+              Ảnh minh chứng
             </Text>
             <Badge size="xs" color="neutral">
               {evidenceImages.length}/3 ảnh
@@ -290,7 +312,7 @@ function ReviewComposerForm({
           <Button variant="default" onClick={onClose}>
             Đóng
           </Button>
-          <Button type="submit">Đăng đánh giá (+10đ uy tín)</Button>
+          <Button type="submit">Đăng đánh giá</Button>
         </Group>
       </Stack>
     </Box>
@@ -347,8 +369,8 @@ function QaComposerForm({
         <Select
           clearable
           searchable
-          label="Gắn thẻ công ty / cơ sở (tùy chọn)"
-          placeholder="Chọn nếu liên quan tới một cơ sở cụ thể"
+          label="Cơ sở (tùy chọn)"
+          placeholder="Chọn cơ sở liên quan"
           data={companyOptions}
           key={qaForm.key('companyId')}
           {...qaForm.getInputProps('companyId')}
@@ -562,7 +584,7 @@ export function PostComposerModal({
   const prefillKey = prefillCompanyId || 'none';
 
   return (
-    <Modal opened={opened} onClose={onClose} size="lg" title="Đăng bài & Chia sẻ Cộng đồng (CS-02)">
+    <Modal opened={opened} onClose={onClose} size="lg" title="Đăng bài mới">
       <Stack gap="md">
         <SegmentedControl
           fullWidth

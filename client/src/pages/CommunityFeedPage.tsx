@@ -20,8 +20,6 @@ import {
   Modal,
   Paper,
   Rating,
-  SegmentedControl,
-  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -120,7 +118,7 @@ function CommunityPostCard({
         <Text size="sm">{post.content}</Text>
 
         {post.criteriaRatings ? (
-          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="xs">
+          <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="xs">
             <Group gap="xs">
               <Text size="xs" c="dimmed">
                 Minh bạch lương:
@@ -139,6 +137,22 @@ function CommunityPostCard({
               </Text>
               <Rating value={post.criteriaRatings.scheduleFlexibility} readOnly size="xs" />
             </Group>
+            {typeof post.criteriaRatings.benefits === 'number' ? (
+              <Group gap="xs">
+                <Text size="xs" c="dimmed">
+                  Chế độ & Đãi ngộ:
+                </Text>
+                <Rating value={post.criteriaRatings.benefits} readOnly size="xs" />
+              </Group>
+            ) : null}
+            {typeof post.criteriaRatings.jobQuality === 'number' ? (
+              <Group gap="xs">
+                <Text size="xs" c="dimmed">
+                  Chất lượng công việc:
+                </Text>
+                <Rating value={post.criteriaRatings.jobQuality} readOnly size="xs" />
+              </Group>
+            ) : null}
           </SimpleGrid>
         ) : null}
 
@@ -254,8 +268,6 @@ export function CommunityFeedPage() {
     Boolean(initialCompose)
   );
   const [composerMode, setComposerMode] = useState<ComposerMode>(initialCompose ?? 'review');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [filterCompanyId, setFilterCompanyId] = useState<string>(initialCompanyId);
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebouncedValue(query, 200);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -263,10 +275,6 @@ export function CommunityFeedPage() {
 
   useEffect(() => {
     const cMode = searchParams.get('compose');
-    const cId = searchParams.get('companyId');
-    if (cId !== null) {
-      setFilterCompanyId(cId);
-    }
     if (isComposerMode(cMode)) {
       setComposerMode(cMode);
       openComposer();
@@ -290,24 +298,19 @@ export function CommunityFeedPage() {
 
   const filteredPosts = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
-    return state.posts.filter((post) => {
-      if (filterType !== 'all' && post.type !== filterType) {
-        return false;
-      }
-      if (filterCompanyId && post.companyId !== filterCompanyId) {
-        return false;
-      }
-      if (q) {
-        const companyName = post.companyId ? (companyMap.get(post.companyId)?.name ?? '') : '';
-        const haystack =
-          `${post.title} ${post.content} ${post.authorName} ${companyName}`.toLowerCase();
-        if (!haystack.includes(q)) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [state.posts, filterType, filterCompanyId, debouncedQuery, companyMap]);
+    const matched = q
+      ? state.posts.filter((post) => {
+          const companyName = post.companyId ? (companyMap.get(post.companyId)?.name ?? '') : '';
+          const haystack =
+            `${post.title} ${post.content} ${post.authorName} ${companyName}`.toLowerCase();
+          return haystack.includes(q);
+        })
+      : state.posts;
+
+    return [...matched].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [state.posts, debouncedQuery, companyMap]);
 
   const handleOpenComposer = (mode: ComposerMode) => {
     setComposerMode(mode);
@@ -351,57 +354,24 @@ export function CommunityFeedPage() {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" wrap="wrap">
-        <Stack gap={2}>
-          <Title order={1} size="h2">
-            Mạng xã hội, Đánh giá & Hỏi đáp (MH-04)
-          </Title>
-          <Text size="sm" c="dimmed">
-            Tham khảo trải nghiệm thực tế từ sinh viên đi trước, đặt câu hỏi hoặc cảnh báo lừa đảo.
-          </Text>
-        </Stack>
+      <Group gap="sm" wrap="nowrap">
+        <TextInput
+          flex={1}
+          placeholder="Tìm theo nội dung, tên công ty, người đăng..."
+          leftSection={<IconSearch size={16} />}
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+        />
         <Button leftSection={<IconPlus size={17} />} onClick={() => handleOpenComposer('review')}>
-          Đăng bài mới (CS-02)
+          Đăng bài mới
         </Button>
       </Group>
-
-      <Card p="md">
-        <Stack gap="sm">
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-            <TextInput
-              placeholder="Tìm theo nội dung, tên công ty, người đăng..."
-              leftSection={<IconSearch size={16} />}
-              value={query}
-              onChange={(e) => setQuery(e.currentTarget.value)}
-            />
-            <Select
-              clearable
-              searchable
-              placeholder="Lọc theo tên công ty / cơ sở"
-              value={filterCompanyId || null}
-              onChange={(v) => setFilterCompanyId(v ?? '')}
-              data={state.companies.map((c) => ({ value: c.id, label: c.name }))}
-            />
-          </SimpleGrid>
-
-          <SegmentedControl
-            value={filterType}
-            onChange={setFilterType}
-            data={[
-              { value: 'all', label: 'Tất cả bài viết' },
-              { value: 'review', label: 'Đánh giá xác thực' },
-              { value: 'question', label: 'Hỏi đáp' },
-              { value: 'warning', label: 'Cảnh báo lừa đảo' },
-            ]}
-          />
-        </Stack>
-      </Card>
 
       <Stack gap="md">
         {filteredPosts.length === 0 ? (
           <Card p="lg">
             <Text size="sm" c="dimmed" ta="center">
-              Chưa có bài viết nào khớp bộ lọc. Hãy thử xóa bộ lọc hoặc đăng bài chia sẻ đầu tiên!
+              Chưa có bài viết nào phù hợp với từ khóa tìm kiếm.
             </Text>
           </Card>
         ) : (
@@ -428,7 +398,7 @@ export function CommunityFeedPage() {
         opened={composerOpened}
         onClose={handleCloseComposer}
         defaultMode={composerMode}
-        prefillCompanyId={filterCompanyId || undefined}
+        prefillCompanyId={initialCompanyId || undefined}
         onSharedJobCreated={(jobId) => {
           void navigate(`/?highlightJobId=${jobId}`);
         }}
