@@ -12,6 +12,7 @@ import {
   CanonicalJob,
   CommunityPost,
   CriteriaRatings,
+  JobStatus,
   PersistedAppState,
   PostType,
   ProfileCardSnapshot,
@@ -22,6 +23,13 @@ import {
 } from '../domain/types';
 
 const STORAGE_KEY = 'svjob_state_v1';
+
+function normalizeJobStatus(status: string): JobStatus {
+  if (status === 'urgent' || status === 'expiring') {
+    return 'urgent';
+  }
+  return 'new';
+}
 
 function isPersistedAppState(value: Partial<PersistedAppState>): value is PersistedAppState {
   return (
@@ -101,7 +109,10 @@ function mergeSeedCatalog(
     },
     companies: syncCompaniesWithPosts(mergedCompanies, mergedPosts),
     rawJobs: [
-      ...persistedState.rawJobs,
+      ...persistedState.rawJobs.map((job) => ({
+        ...job,
+        status: normalizeJobStatus(job.status),
+      })),
       ...seedState.rawJobs.filter((job) => !existingJobIds.has(job.id)),
     ],
     posts: mergedPosts,
