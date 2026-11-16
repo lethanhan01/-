@@ -39,9 +39,81 @@
   box-shadow: var(--mantine-shadow-sm);
 }
 
-.jobPin {
-  width: rem(28px);
-  height: rem(28px);
+.pinIcon {
+  display: block;
+  flex-shrink: 0;
+  color: var(--mantine-color-white);
+}
+
+.pinShape {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: rem(26px);
+  height: rem(26px);
+  border: rem(2px) solid var(--mantine-color-body);
+  box-shadow:
+    0 0 0 rem(1px) var(--mantine-color-default-border),
+    var(--mantine-shadow-sm);
+  transform: scale(var(--pin-scale, 1));
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
+
+  &[data-kind='new'] {
+    border-radius: 50%;
+    background-color: var(--mantine-color-brand-filled);
+  }
+
+  &[data-kind='urgent'] {
+    width: rem(23px);
+    height: rem(23px);
+    border-radius: var(--mantine-radius-xs);
+    background-color: var(--mantine-color-warning-filled);
+    transform: rotate(45deg) scale(var(--pin-scale, 1));
+
+    .pinIcon {
+      transform: rotate(-45deg);
+    }
+  }
+
+  &[data-kind='user'] {
+    width: rem(26px);
+    height: rem(26px);
+    border-radius: 50% 50% 50% 0;
+    background-color: var(--mantine-color-danger-filled);
+    transform: rotate(-45deg) scale(var(--pin-scale, 1));
+
+    .pinIcon {
+      transform: rotate(45deg);
+    }
+  }
+
+  &[data-compact] {
+    width: rem(22px);
+    height: rem(22px);
+
+    &[data-kind='urgent'] {
+      width: rem(19px);
+      height: rem(19px);
+    }
+
+    &[data-kind='user'] {
+      width: rem(21px);
+      height: rem(21px);
+    }
+  }
+}
+
+.jobPin,
+.userLocationPin {
+  --pin-scale: 1;
+
+  width: rem(32px);
+  height: rem(32px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -50,57 +122,14 @@
   cursor: pointer;
   padding: 0;
 
-  &::after {
-    content: '';
-    width: rem(20px);
-    height: rem(20px);
-    border-radius: 50%;
-    border: rem(2.5px) solid var(--mantine-color-body);
-    background-color: var(--mantine-color-brand-filled);
-    box-shadow:
-      0 0 0 rem(1px) var(--mantine-color-default-border),
-      var(--mantine-shadow-sm);
-    transition:
-      transform 150ms ease,
-      border-color 150ms ease;
-  }
-
   @mixin hover {
-    &::after {
-      transform: scale(1.14);
-    }
-  }
-
-  &[data-status='new']::after {
-    background-color: var(--mantine-color-brand-filled);
-  }
-
-  &[data-status='urgent']::after {
-    background-color: var(--mantine-color-warning-filled);
-  }
-
-  &[data-status='updated']::after {
-    background-color: var(--mantine-color-success-filled);
-  }
-
-  &[data-status='expiring']::after {
-    background-color: var(--mantine-color-danger-filled);
-  }
-
-  &[data-selected='true'] {
-    z-index: 3;
-
-    &::after {
-      transform: scale(1.28);
-      border-width: rem(3px);
-      border-color: var(--mantine-color-text);
-    }
+    --pin-scale: 1.14;
   }
 
   &:focus-visible {
     outline: none;
 
-    &::after {
+    .pinShape {
       outline: rem(2px) solid var(--mantine-primary-color-filled);
       outline-offset: rem(2px);
     }
@@ -108,72 +137,23 @@
 }
 
 .userLocationPin {
-  width: rem(28px);
-  height: rem(28px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  padding: 0;
+  width: rem(34px);
+  height: rem(36px);
+  padding-bottom: rem(4px);
+  z-index: 2;
 
-  &::after {
-    content: '';
-    width: rem(18px);
-    height: rem(18px);
-    border-radius: 50%;
-    border: rem(3px) solid var(--mantine-color-body);
-    background-color: var(--mantine-color-success-filled);
-    box-shadow:
-      0 0 0 rem(6px) var(--mantine-color-success-light),
-      var(--mantine-shadow-sm);
-    transition: transform 150ms ease;
-  }
-
-  @mixin hover {
-    &::after {
-      transform: scale(1.14);
-    }
-  }
-
-  &:focus-visible {
-    outline: none;
-
-    &::after {
-      outline: rem(2px) solid var(--mantine-color-success-filled);
-      outline-offset: rem(4px);
-    }
+  &:focus-visible .pinShape {
+    outline-color: var(--mantine-color-danger-filled);
   }
 }
 
-.legendPin {
-  width: rem(18px);
-  height: rem(18px);
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: rem(2.5px) solid var(--mantine-color-body);
-  box-shadow: 0 0 0 rem(1px) var(--mantine-color-default-border);
+.jobPin[data-selected='true'] {
+  --pin-scale: 1.24;
+  z-index: 3;
 
-  &[data-status='new'] {
-    background-color: var(--mantine-color-brand-filled);
-  }
-
-  &[data-status='urgent'] {
-    background-color: var(--mantine-color-warning-filled);
-  }
-
-  &[data-status='updated'] {
-    background-color: var(--mantine-color-success-filled);
-  }
-
-  &[data-status='expiring'] {
-    background-color: var(--mantine-color-danger-filled);
-  }
-
-  &[data-kind='user'] {
-    background-color: var(--mantine-color-success-filled);
-    box-shadow: 0 0 0 rem(4px) var(--mantine-color-success-light);
+  .pinShape {
+    border-width: rem(2.5px);
+    border-color: var(--mantine-color-text);
   }
 }
 

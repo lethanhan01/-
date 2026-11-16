@@ -19,10 +19,8 @@ export interface DeduplicateResult {
 }
 
 export const JOB_STATUS_META: Record<JobStatus, { label: string; color: string }> = {
-  new: { label: 'Mới đăng', color: 'brand' },
+  new: { label: 'Đang tuyển', color: 'brand' },
   urgent: { label: 'Tuyển gấp', color: 'warning' },
-  updated: { label: 'Đã cập nhật', color: 'success' },
-  expiring: { label: 'Sắp hết hạn', color: 'danger' },
 };
 
 const WEEKDAY_LABEL_MAP = Object.fromEntries(WEEKDAYS.map((d) => [d.key, d.shortLabel])) as Record<

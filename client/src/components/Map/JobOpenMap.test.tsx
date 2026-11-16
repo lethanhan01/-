@@ -157,8 +157,8 @@ vi.mock('@openmapvn/openmapvn-gl', () => {
 function buildSampleItems(): MapJobItem[] {
   const seed = createSeedState();
   const companyMap = new Map<string, Company>(seed.companies.map((c) => [c.id, c]));
-  const hustJobs = seed.rawJobs.filter((job) => job.id.startsWith('job-hust-')).slice(0, 4);
-  const statuses: CanonicalJob['status'][] = ['new', 'urgent', 'updated', 'expiring'];
+  const hustJobs = seed.rawJobs.filter((job) => job.id.startsWith('job-hust-')).slice(0, 2);
+  const statuses: CanonicalJob['status'][] = ['new', 'urgent'];
 
   return statuses.map((status, idx) => {
     const raw = hustJobs[idx];
@@ -213,10 +213,10 @@ describe('JobOpenMap', () => {
     vi.unstubAllEnvs();
   });
 
-  it('centers in Hanoi even if passed a non-Hanoi center and renders all job statuses with subpixelPositioning', () => {
+  it('centers in Hanoi even if passed a non-Hanoi center and renders distinct pin icons/anchors for job statuses and user location', () => {
     const items = buildSampleItems();
 
-    render(
+    const { container } = render(
       <JobOpenMap
         center={{ id: 'zone-dhqg', label: 'TP.HCM cũ', lat: 10.87, lng: 106.8031 }}
         radiusKm={5}
@@ -228,24 +228,40 @@ describe('JobOpenMap', () => {
 
     expect(mockState.mapInitOptions[0]?.center).toEqual([105.8431, 21.0056]);
 
-    // 1 user location marker + 4 job markers (new, urgent, updated, expiring)
-    expect(mockState.markers).toHaveLength(5);
+    // 1 user location marker + 2 job markers (new, urgent)
+    expect(mockState.markers).toHaveLength(3);
     for (const marker of mockState.markers) {
-      expect(marker.anchor).toBe('center');
       expect(marker.subpixelPositioning).toBe(true);
     }
+
+    const userMarker = mockState.markers.find(
+      (m) => m.element?.getAttribute('aria-label') === 'Vị trí hiện tại của bạn'
+    );
+    expect(userMarker?.anchor).toBe('bottom');
+    expect(userMarker?.element?.querySelector('[data-kind="user"] svg')).not.toBeNull();
+
     const jobMarkers = mockState.markers.filter((m) => m.element?.dataset.status);
-    expect(jobMarkers.map((m) => m.element?.dataset.status)).toEqual([
+    expect(jobMarkers.map((m) => m.element?.dataset.status)).toEqual(['new', 'urgent']);
+    for (const marker of jobMarkers) {
+      expect(marker.anchor).toBe('center');
+      const status = marker.element?.dataset.status;
+      expect(marker.element?.querySelector(`[data-kind="${status}"] svg`)).not.toBeNull();
+    }
+
+    const compactLegendPins = Array.from(container.querySelectorAll('[data-compact="true"]'));
+    expect(compactLegendPins.map((el) => el.getAttribute('data-kind'))).toEqual([
       'new',
       'urgent',
-      'updated',
-      'expiring',
+      'user',
     ]);
+    for (const pin of compactLegendPins) {
+      expect(pin.querySelector('svg')).not.toBeNull();
+    }
 
-    expect(screen.getByText('Mới đăng')).toBeInTheDocument();
+    expect(screen.getByText('Đang tuyển')).toBeInTheDocument();
     expect(screen.getByText('Tuyển gấp')).toBeInTheDocument();
-    expect(screen.getByText('Đã cập nhật')).toBeInTheDocument();
-    expect(screen.getByText('Sắp hết hạn')).toBeInTheDocument();
+    expect(screen.queryByText('Đã cập nhật')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sắp hết hạn')).not.toBeInTheDocument();
     expect(screen.getByText('Vị trí của bạn')).toBeInTheDocument();
   });
 
@@ -272,7 +288,7 @@ describe('JobOpenMap', () => {
     const initialJobMarkerEls = mockState.markers
       .filter((m) => m.element?.dataset.status)
       .map((m) => m.element);
-    expect(initialJobMarkerEls).toHaveLength(4);
+    expect(initialJobMarkerEls).toHaveLength(2);
 
     const firstPin = initialJobMarkerEls[0];
     if (!firstPin) {
@@ -301,7 +317,7 @@ describe('JobOpenMap', () => {
     const activeJobMarkers = mockState.markers.filter(
       (m) => !m.removed && m.element?.dataset.status
     );
-    expect(activeJobMarkers).toHaveLength(4);
+    expect(activeJobMarkers).toHaveLength(2);
     expect(activeJobMarkers[0]?.element).toBe(firstPin);
     expect(activeJobMarkers[1]?.element?.dataset.selected).toBe('true');
     expect(mockState.panToCalls).toContainEqual([items[1].company.lng, items[1].company.lat]);
@@ -478,7 +494,7 @@ describe('JobOpenMap', () => {
     expect(screen.getByText(/Bản đồ ghim việc làm quanh ĐH Bách khoa Hà Nội/i)).toBeInTheDocument();
   });
 
-  it('includes updated jobs and preserves legend in WebGL-unavailable fallback mode', () => {
+  it('includes active jobs and preserves legend in WebGL-unavailable fallback mode', () => {
     mockState.shouldThrowOnMapInit = true;
     const items = buildSampleItems();
 
@@ -498,8 +514,9 @@ describe('JobOpenMap', () => {
     );
 
     expect(screen.getByText(/Bản đồ ghim việc làm quanh ĐH Bách khoa Hà Nội/i)).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(items[2].company.name, 'i'))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(items[1].company.name, 'i'))).toBeInTheDocument();
     expect(screen.getByText('Vị trí của bạn')).toBeInTheDocument();
-    expect(screen.getByText('Đã cập nhật')).toBeInTheDocument();
+    expect(screen.getByText('Đang tuyển')).toBeInTheDocument();
+    expect(screen.getByText('Tuyển gấp')).toBeInTheDocument();
   });
 });

@@ -67,7 +67,7 @@ export interface Company {
   videoPreview?: WorkplaceVideoPreview;
 }
 
-export type JobStatus = 'new' | 'urgent' | 'updated' | 'expiring';
+export type JobStatus = 'new' | 'urgent';
 
 export type ShiftPeriod = 'morning' | 'afternoon' | 'evening' | 'weekend';
 

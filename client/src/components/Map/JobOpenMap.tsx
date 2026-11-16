@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ComponentType, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Map as OpenMap,
   Marker,
@@ -6,7 +7,13 @@ import {
   type GeoJSONSource,
   type StyleSpecification,
 } from '@openmapvn/openmapvn-gl';
-import { IconCurrentLocation, IconMinus, IconPlus } from '@tabler/icons-react';
+import {
+  IconBolt,
+  IconCurrentLocation,
+  IconMinus,
+  IconPlus,
+  IconSparkles,
+} from '@tabler/icons-react';
 import {
   ActionIcon,
   Badge,
@@ -20,7 +27,7 @@ import {
   useComputedColorScheme,
 } from '@mantine/core';
 import { JOB_STATUS_META } from '../../domain/jobLogic';
-import { CanonicalJob, Company, StudentAnchorZone } from '../../domain/types';
+import { CanonicalJob, Company, JobStatus, StudentAnchorZone } from '../../domain/types';
 import { theme } from '../../theme';
 import classes from './JobOpenMap.module.css';
 
@@ -52,10 +59,38 @@ const HANOI_DEFAULT_CENTER: StudentAnchorZone = {
   lng: 105.8431,
 };
 
-const MAP_VISIBLE_STATUSES = ['new', 'urgent', 'updated', 'expiring'] as const;
+const MAP_VISIBLE_STATUSES = ['new', 'urgent'] as const;
 const RADIUS_SOURCE_ID = 'job-radius-source';
 const RADIUS_FILL_LAYER_ID = 'job-radius-fill';
 const RADIUS_LINE_LAYER_ID = 'job-radius-line';
+
+type PinKind = JobStatus | 'user';
+
+interface MarkerPortalTarget {
+  key: string;
+  element: HTMLButtonElement;
+  kind: PinKind;
+}
+
+const JOB_STATUS_ICON: Record<
+  JobStatus,
+  ComponentType<{ size?: number; stroke?: number; className?: string }>
+> = {
+  new: IconSparkles,
+  urgent: IconBolt,
+};
+
+function MapPinVisual({
+  kind,
+  compact = false,
+}: Readonly<{ kind: PinKind; compact?: boolean }>) {
+  const Icon = kind === 'user' ? IconCurrentLocation : JOB_STATUS_ICON[kind];
+  return (
+    <Box className={classes.pinShape} mod={{ kind, compact }} aria-hidden="true">
+      <Icon className={classes.pinIcon} size={compact ? 11 : 13} stroke={2.3} />
+    </Box>
+  );
+}
 
 function resolveHanoiCenter(zone: StudentAnchorZone): StudentAnchorZone {
   const isInHanoiBounds =
@@ -227,6 +262,8 @@ export function JobOpenMap({
   const [mapFailed, setMapFailed] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userPortalTarget, setUserPortalTarget] = useState<MarkerPortalTarget | null>(null);
+  const [jobPortalTargets, setJobPortalTargets] = useState<MarkerPortalTarget[]>([]);
   const userLocation: UserLocationState = useMemo(
     () =>
       gpsLocation
@@ -390,11 +427,12 @@ export function JobOpenMap({
 
     userMarkerRef.current = new Marker({
       element: el,
-      anchor: 'center',
+      anchor: 'bottom',
       subpixelPositioning: true,
     })
       .setLngLat([userLocation.lng, userLocation.lat])
       .addTo(map);
+    setUserPortalTarget({ key: 'user', element: el, kind: 'user' });
   }, [userLocation, resolvedCenter.label]);
 
   useEffect(() => {
@@ -407,6 +445,7 @@ export function JobOpenMap({
       marker.remove();
     }
     jobMarkersRef.current = [];
+    const nextPortalTargets: MarkerPortalTarget[] = [];
 
     for (const item of visibleItems) {
       const el = document.createElement('button');
@@ -438,7 +477,9 @@ export function JobOpenMap({
         .setLngLat([item.company.lng, item.company.lat])
         .addTo(map);
       jobMarkersRef.current.push(marker);
+      nextPortalTargets.push({ key: item.job.id, element: el, kind: item.job.status });
     }
+    setJobPortalTargets(nextPortalTargets);
   }, [visibleItems]);
 
   useEffect(() => {
@@ -492,14 +533,14 @@ export function JobOpenMap({
       <Group gap="lg" wrap="wrap" align="center">
         {MAP_VISIBLE_STATUSES.map((statusKey) => (
           <Group key={statusKey} gap="xs" wrap="nowrap">
-            <Box className={classes.legendPin} mod={{ status: statusKey }} aria-hidden="true" />
+            <MapPinVisual kind={statusKey} compact />
             <Text size="sm" fw={600}>
               {JOB_STATUS_META[statusKey].label}
             </Text>
           </Group>
         ))}
         <Group gap="xs" wrap="nowrap">
-          <Box className={classes.legendPin} mod={{ kind: 'user' }} aria-hidden="true" />
+          <MapPinVisual kind="user" compact />
           <Text size="sm" fw={600}>
             Vị trí của bạn
           </Text>
@@ -585,6 +626,16 @@ export function JobOpenMap({
           </Tooltip>
         </ActionIcon.Group>
       </Box>
+      {userPortalTarget
+        ? createPortal(
+            <MapPinVisual kind={userPortalTarget.kind} />,
+            userPortalTarget.element,
+            userPortalTarget.key
+          )
+        : null}
+      {jobPortalTargets.map((target) =>
+        createPortal(<MapPinVisual kind={target.kind} />, target.element, target.key)
+      )}
       {legend}
     </Stack>
   );
