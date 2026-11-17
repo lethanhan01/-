@@ -1,9 +1,4 @@
-import {
-  IconAlertTriangle,
-  IconCertificate,
-  IconMapPinCheck,
-  IconStarFilled,
-} from '@tabler/icons-react';
+import { IconAlertTriangle, IconCertificate, IconStarFilled } from '@tabler/icons-react';
 import { Badge, Group, Tooltip } from '@mantine/core';
 import { Company } from '../../domain/types';
 
@@ -37,12 +32,6 @@ export function TrustBadge({ company, compact = false }: TrustBadgeProps) {
             GPKD đã xác thực
           </Badge>
         </Tooltip>
-      ) : null}
-
-      {!compact && company.mapVerified ? (
-        <Badge color="brand" variant="outline" leftSection={<IconMapPinCheck size={12} />}>
-          Địa chỉ khớp bản đồ
-        </Badge>
       ) : null}
 
       {company.warningFlag ? (

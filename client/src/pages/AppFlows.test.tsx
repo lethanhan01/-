@@ -117,41 +117,23 @@ describe('Student Part-Time App Flows', () => {
     ).toBeInTheDocument();
   });
 
-  it('opens CS-02 on MH-04 and posts a new community question', async () => {
+  it('keeps community questions and trusted-job sharing in post comments', async () => {
     const user = userEvent.setup();
     renderAppRoute('/community');
 
     await user.click(screen.getByRole('button', { name: /Đăng bài mới/i }));
-    await user.click(screen.getByText(/Hỏi đáp \/ Cảnh báo/i));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryByText(/Hỏi đáp \/ Cảnh báo/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/Chia sẻ tin uy tín lên Bản đồ/i)).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /Đóng/i }));
 
-    await user.type(screen.getByLabelText(/^Tiêu đề/i), 'Hỏi lịch làm cuối tuần tại Thủ Đức');
-    await user.type(
-      screen.getByLabelText(/Nội dung chi tiết/i),
-      'Có bạn nào từng làm ca sáng T7-CN ở khu ĐHQG chia sẻ giúp mình nhé!'
-    );
-    await user.click(screen.getByRole('button', { name: /Đăng lên bảng tin/i }));
+    const commentInput = screen.getAllByPlaceholderText(/Viết bình luận hoặc câu hỏi của bạn/i)[0];
+    await user.type(commentInput, 'Mình muốn hỏi thêm về lịch làm và mức độ uy tín của tin này.');
+    await user.click(screen.getAllByRole('button', { name: /^Gửi$/i })[0]);
 
-    expect(await screen.findByText(/Hỏi lịch làm cuối tuần tại Thủ Đức/i)).toBeInTheDocument();
-  });
-
-  it('shares a trusted job from CS-02 onto MH-01 map list', async () => {
-    const user = userEvent.setup();
-    renderAppRoute('/community');
-
-    await user.click(screen.getByRole('button', { name: /Đăng bài mới/i }));
-    await user.click(screen.getByText(/Chia sẻ tin uy tín lên Bản đồ/i));
-
-    await user.type(screen.getByLabelText(/Tên cơ sở mới/i), 'Phê La Làng ĐHQG');
-    await user.type(screen.getByLabelText(/Địa chỉ cụ thể/i), '18 Hàn Thuyên, Linh Trung');
-    await user.type(screen.getByLabelText(/Vị trí tuyển dụng/i), 'Nhân viên Pha chế Ca Tối');
-    await user.type(
-      screen.getByLabelText(/Mô tả công việc/i),
-      'Quán mới mở ngay khu ĐHQG, hợp đồng rõ ràng, không thu phí đồng phục.'
-    );
-    await user.click(screen.getByRole('button', { name: /Chia sẻ lên Bản đồ/i }));
-
-    expect(await screen.findByText(/Danh sách việc làm/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Nhân viên Pha chế Ca Tối/i).length).toBeGreaterThanOrEqual(1);
+    expect(
+      await screen.findByText('Mình muốn hỏi thêm về lịch làm và mức độ uy tín của tin này.')
+    ).toBeInTheDocument();
   }, 15000);
 
   it('switches threads with aria-current and sends message + profile card on MH-05', async () => {

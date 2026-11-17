@@ -1,5 +1,4 @@
 import { ComponentType, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
   Map as OpenMap,
   Marker,
@@ -14,6 +13,7 @@ import {
   IconPlus,
   IconSparkles,
 } from '@tabler/icons-react';
+import { createPortal } from 'react-dom';
 import {
   ActionIcon,
   Badge,
@@ -80,10 +80,7 @@ const JOB_STATUS_ICON: Record<
   urgent: IconBolt,
 };
 
-function MapPinVisual({
-  kind,
-  compact = false,
-}: Readonly<{ kind: PinKind; compact?: boolean }>) {
+function MapPinVisual({ kind, compact = false }: Readonly<{ kind: PinKind; compact?: boolean }>) {
   const Icon = kind === 'user' ? IconCurrentLocation : JOB_STATUS_ICON[kind];
   return (
     <Box className={classes.pinShape} mod={{ kind, compact }} aria-hidden="true">
