@@ -15,7 +15,7 @@ import {
   IconShieldCheck,
   IconStarFilled,
 } from '@tabler/icons-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   Alert,
   Avatar,
@@ -680,7 +680,6 @@ function CompanySidebarCards({
 
 export function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
-  const navigate = useNavigate();
   const { state, derived } = useAppState();
 
   const [reportOpened, { open: openReport, close: closeReport }] = useDisclosure(false);
@@ -837,9 +836,7 @@ export function JobDetailPage() {
       <PostComposerModal
         opened={composerOpened}
         onClose={closeComposer}
-        defaultMode="review"
         prefillCompanyId={company.id}
-        onSharedJobCreated={(sharedJobId) => void navigate(`/jobs/${sharedJobId}`)}
       />
 
       <Modal

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { IconPhoto, IconTrash, IconUpload, IconX } from '@tabler/icons-react';
 import {
   ActionIcon,
@@ -30,15 +30,13 @@ import { ShiftPeriod } from '../../domain/types';
 import { useAppState } from '../../state/AppStateContext';
 import classes from './PostComposerModal.module.css';
 
-export type ComposerMode = 'review' | 'qa' | 'share';
-
 interface PostComposerModalProps {
   opened: boolean;
   onClose: () => void;
-  defaultMode?: ComposerMode;
   prefillCompanyId?: string;
-  onSharedJobCreated?: (jobId: string) => void;
 }
+
+export type ComposerMode = 'review' | 'qa' | 'share';
 
 interface ReviewFormValues {
   companyId: string;
@@ -298,7 +296,7 @@ function ReviewComposerForm({
   );
 }
 
-function QaComposerForm({
+export function QaComposerForm({
   companyOptions,
   defaultCompanyId,
   onClose,
@@ -308,15 +306,9 @@ function QaComposerForm({
   onClose: () => void;
 }) {
   const { actions } = useAppState();
-
   const qaForm = useForm<QaFormValues>({
     mode: 'uncontrolled',
-    initialValues: {
-      subType: 'question',
-      companyId: defaultCompanyId,
-      title: '',
-      content: '',
-    },
+    initialValues: { subType: 'question', companyId: defaultCompanyId, title: '', content: '' },
     validate: {
       title: (v) => (v.trim().length < 5 ? 'Tiêu đề tối thiểu 5 ký tự' : null),
       content: (v) => (v.trim().length < 10 ? 'Nội dung tối thiểu 10 ký tự' : null),
@@ -381,7 +373,7 @@ function QaComposerForm({
   );
 }
 
-function ShareJobComposerForm({
+export function ShareJobComposerForm({
   companyOptions,
   defaultCompanyId,
   onClose,
@@ -393,7 +385,6 @@ function ShareJobComposerForm({
   onSharedJobCreated?: (jobId: string) => void;
 }) {
   const { state, actions } = useAppState();
-
   const shareForm = useForm<ShareJobFormValues>({
     mode: 'uncontrolled',
     initialValues: {
@@ -425,7 +416,6 @@ function ShareJobComposerForm({
   const handleSubmitShare = (values: ShareJobFormValues) => {
     const existingCompany = state.companies.find((c) => c.id === values.companyId);
     const zone = ANCHOR_ZONES.find((z) => z.id === values.zoneId) ?? ANCHOR_ZONES[0];
-
     const createdJob = actions.shareTrustedJob({
       companyId: existingCompany?.id,
       newCompanyName: values.newCompanyName.trim(),
@@ -440,7 +430,6 @@ function ShareJobComposerForm({
       sourceName: values.sourceName.trim(),
       description: values.description.trim(),
     });
-
     shareForm.reset();
     onClose();
     onSharedJobCreated?.(createdJob.id);
@@ -543,67 +532,20 @@ function ShareJobComposerForm({
   );
 }
 
-export function PostComposerModal({
-  opened,
-  onClose,
-  defaultMode = 'review',
-  prefillCompanyId,
-  onSharedJobCreated,
-}: PostComposerModalProps) {
+export function PostComposerModal({ opened, onClose, prefillCompanyId }: PostComposerModalProps) {
   const { state } = useAppState();
-  const [mode, setMode] = useState<ComposerMode>(defaultMode);
-
-  useEffect(() => {
-    if (opened) {
-      setMode(defaultMode);
-    }
-  }, [opened, defaultMode]);
 
   const companyOptions = state.companies.map((c) => ({ value: c.id, label: c.name }));
   const prefillKey = prefillCompanyId || 'none';
 
   return (
     <Modal opened={opened} onClose={onClose} size="lg" title="Đăng bài mới">
-      <Stack gap="md">
-        <SegmentedControl
-          fullWidth
-          value={mode}
-          onChange={(v) => setMode(v as ComposerMode)}
-          data={[
-            { value: 'review', label: 'Viết đánh giá công ty' },
-            { value: 'qa', label: 'Hỏi đáp / Cảnh báo' },
-            { value: 'share', label: 'Chia sẻ tin uy tín lên Bản đồ' },
-          ]}
-        />
-
-        {mode === 'review' ? (
-          <ReviewComposerForm
-            key={`review-${prefillKey}`}
-            companyOptions={companyOptions}
-            defaultCompanyId={prefillCompanyId || state.companies[0]?.id || ''}
-            onClose={onClose}
-          />
-        ) : null}
-
-        {mode === 'qa' ? (
-          <QaComposerForm
-            key={`qa-${prefillKey}`}
-            companyOptions={companyOptions}
-            defaultCompanyId={prefillCompanyId || ''}
-            onClose={onClose}
-          />
-        ) : null}
-
-        {mode === 'share' ? (
-          <ShareJobComposerForm
-            key={`share-${prefillKey}`}
-            companyOptions={companyOptions}
-            defaultCompanyId={prefillCompanyId || ''}
-            onClose={onClose}
-            onSharedJobCreated={onSharedJobCreated}
-          />
-        ) : null}
-      </Stack>
+      <ReviewComposerForm
+        key={`review-${prefillKey}`}
+        companyOptions={companyOptions}
+        defaultCompanyId={prefillCompanyId || state.companies[0]?.id || ''}
+        onClose={onClose}
+      />
     </Modal>
   );
 }

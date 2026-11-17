@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   IconBuildingStore,
   IconMessageCircle,
@@ -29,7 +29,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
-import { ComposerMode, PostComposerModal } from '../components/Modals/PostComposerModal';
+import { PostComposerModal } from '../components/Modals/PostComposerModal';
 import { PHOTO_FALLBACK } from '../data/seedData';
 import { computePostOverallRating, CRITERIA_RATING_ITEMS } from '../domain/jobLogic';
 import { CommunityPost, Company, PostType } from '../domain/types';
@@ -41,10 +41,6 @@ const POST_TYPE_META: Record<PostType, { label: string; color: string }> = {
   question: { label: 'Hỏi đáp kinh nghiệm', color: 'brand' },
   warning: { label: 'Cảnh báo lừa đảo', color: 'danger' },
 };
-
-function isComposerMode(value: string | null): value is ComposerMode {
-  return value === 'review' || value === 'qa' || value === 'share';
-}
 
 function CommunityPostCard({
   post,
@@ -259,27 +255,17 @@ export function CommunityFeedPage() {
   const navigate = useNavigate();
   const { state, derived, actions } = useAppState();
 
-  const rawCompose = searchParams.get('compose');
-  const initialCompose = isComposerMode(rawCompose) ? rawCompose : null;
+  const initialCompose = searchParams.get('compose');
   const initialCompanyId = searchParams.get('companyId') || '';
   const focusedPostId = searchParams.get('postId');
 
   const [composerOpened, { open: openComposer, close: closeComposer }] = useDisclosure(
     Boolean(initialCompose)
   );
-  const [composerMode, setComposerMode] = useState<ComposerMode>(initialCompose ?? 'review');
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebouncedValue(query, 200);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const cMode = searchParams.get('compose');
-    if (isComposerMode(cMode)) {
-      setComposerMode(cMode);
-      openComposer();
-    }
-  }, [searchParams, openComposer]);
 
   const companyMap = useMemo(
     () => new Map(state.companies.map((c) => [c.id, c])),
@@ -312,8 +298,7 @@ export function CommunityFeedPage() {
     );
   }, [state.posts, debouncedQuery, companyMap]);
 
-  const handleOpenComposer = (mode: ComposerMode) => {
-    setComposerMode(mode);
+  const handleOpenComposer = () => {
     openComposer();
   };
 
@@ -365,7 +350,7 @@ export function CommunityFeedPage() {
           value={query}
           onChange={(e) => setQuery(e.currentTarget.value)}
         />
-        <Button leftSection={<IconPlus size={17} />} onClick={() => handleOpenComposer('review')}>
+        <Button leftSection={<IconPlus size={17} />} onClick={handleOpenComposer}>
           Đăng bài mới
         </Button>
       </Group>
@@ -400,11 +385,7 @@ export function CommunityFeedPage() {
       <PostComposerModal
         opened={composerOpened}
         onClose={handleCloseComposer}
-        defaultMode={composerMode}
         prefillCompanyId={initialCompanyId || undefined}
-        onSharedJobCreated={(jobId) => {
-          void navigate(`/?highlightJobId=${jobId}`);
-        }}
       />
 
       <Modal
