@@ -77,15 +77,14 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const { state, actions } = useAppState();
-  const { currentUser, logout } = useAuthMock();
+  const { logout } = useAuthMock();
   const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage<boolean>({
     key: 'svjob_sidebar_collapsed_v1',
     defaultValue: false,
   });
 
-  const activeUser = currentUser ?? state.profile;
-  const displayName = activeUser.fullName;
-  const displayUniversity = activeUser.university;
+  const displayName = state.profile.fullName;
+  const displayUniversity = state.profile.university;
   const avatarInitial = displayName.trim().slice(0, 1).toUpperCase() || 'U';
   const currentProfileTab = resolveProfileTab(location.pathname, location.search);
   const isDark = colorScheme === 'dark';

@@ -5,28 +5,48 @@ import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
 import { RedirectAuthenticatedUser, RequireAuth } from '../components/Auth/AuthRouteGuards';
 import { AppLayout } from '../components/Layout/AppLayout';
-import { AppStateProvider } from '../state/AppStateContext';
+import { useAppState, UserScopedAppStateProvider } from '../state/AppStateContext';
 import { AuthMockProvider } from '../state/AuthMockContext';
 import { AuthPage } from './AuthPage';
+
+function AccountProfileProbe() {
+  const { state } = useAppState();
+
+  return (
+    <Text>
+      {state.profile.fullName} | {state.profile.email} | {state.profile.university}
+    </Text>
+  );
+}
 
 function renderAuthRoute(initialEntry = '/auth') {
   window.localStorage.clear();
   return render(
     <AuthMockProvider>
       <Notifications />
-      <MemoryRouter initialEntries={[initialEntry]}>
-        <Routes>
-          <Route element={<RedirectAuthenticatedUser />}>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/login" element={<AuthPage defaultTab="login" />} />
-            <Route path="/register" element={<AuthPage defaultTab="register" />} />
-          </Route>
-          <Route element={<RequireAuth />}>
-            <Route path="/" element={<Text>Protected system page</Text>} />
-            <Route path="/community" element={<Text>Protected community page</Text>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
+      <UserScopedAppStateProvider>
+        <MemoryRouter initialEntries={[initialEntry]}>
+          <Routes>
+            <Route element={<RedirectAuthenticatedUser />}>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/login" element={<AuthPage defaultTab="login" />} />
+              <Route path="/register" element={<AuthPage defaultTab="register" />} />
+            </Route>
+            <Route element={<RequireAuth />}>
+              <Route path="/" element={<AccountProfileProbe />} />
+              <Route
+                path="/community"
+                element={
+                  <>
+                    <Text>Protected community page</Text>
+                    <AccountProfileProbe />
+                  </>
+                }
+              />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </UserScopedAppStateProvider>
     </AuthMockProvider>
   );
 }
@@ -51,7 +71,7 @@ function renderAuthenticatedApp() {
     <ModalsProvider>
       <Notifications />
       <AuthMockProvider>
-        <AppStateProvider>
+        <UserScopedAppStateProvider>
           <MemoryRouter initialEntries={['/']}>
             <Routes>
               <Route element={<RedirectAuthenticatedUser />}>
@@ -64,7 +84,7 @@ function renderAuthenticatedApp() {
               </Route>
             </Routes>
           </MemoryRouter>
-        </AppStateProvider>
+        </UserScopedAppStateProvider>
       </AuthMockProvider>
     </ModalsProvider>
   );
@@ -112,7 +132,29 @@ describe('AuthPage (Đăng nhập & Đăng ký)', () => {
     await user.click(screen.getByLabelText(/Tôi cam kết đánh giá trung thực/i));
     await user.click(screen.getByRole('button', { name: /^Tạo tài khoản$/i }));
 
-    expect(await screen.findByText('Protected system page')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Lê Minh Tuấn | tuan@uit.edu.vn | ĐH Bách Khoa TP.HCM')
+    ).toBeInTheDocument();
+    const accountStateKey = Object.keys(window.localStorage).find((key) =>
+      key.startsWith('svjob_state_v1:student-')
+    );
+    expect(accountStateKey).toBeDefined();
+    expect(JSON.parse(window.localStorage.getItem(accountStateKey!) ?? '').profile.fullName).toBe(
+      'Lê Minh Tuấn'
+    );
+  });
+
+  it('uses the profile belonging to the account that signs in', async () => {
+    const user = userEvent.setup();
+    renderAuthRoute('/login');
+
+    await user.type(screen.getByLabelText(/Email sinh viên/i), 'hoangnam@ueh.edu.vn');
+    await user.type(screen.getByLabelText(/Mật khẩu/i), '123456');
+    await user.click(screen.getByRole('button', { name: /^Đăng nhập$/i }));
+
+    expect(
+      await screen.findByText('Trần Hoàng Nam | hoangnam@ueh.edu.vn | ĐH Kinh tế TP.HCM (UEH)')
+    ).toBeInTheDocument();
   });
 
   it('logs out and returns to the login screen, blocking system access', async () => {

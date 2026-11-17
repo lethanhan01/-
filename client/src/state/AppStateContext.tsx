@@ -21,8 +21,59 @@ import {
   StudentProfile,
   Weekday,
 } from '../domain/types';
+import { useAuthMock } from './AuthMockContext';
 
 const STORAGE_KEY = 'svjob_state_v1';
+
+function getUserStorageKey(userId: string): string {
+  return `${STORAGE_KEY}:${encodeURIComponent(userId)}`;
+}
+
+function createAccountSeedState(user: ReturnType<typeof useAuthMock>['currentUser']) {
+  const seed = createSeedState();
+  if (!user) {
+    return seed;
+  }
+
+  const isOriginalDemoAccount = user.id === 'student-1';
+  return {
+    ...seed,
+    profile: {
+      ...seed.profile,
+      id: user.id,
+      fullName: user.fullName,
+      university: user.university,
+      major: user.major,
+      yearLabel: user.yearLabel,
+      phone: user.phone,
+      email: user.email,
+      skills: isOriginalDemoAccount ? seed.profile.skills : [],
+      bio: isOriginalDemoAccount ? seed.profile.bio : '',
+      reputationPoints: isOriginalDemoAccount ? seed.profile.reputationPoints : 0,
+      verifiedStudent: user.verifiedStudent,
+    },
+  };
+}
+
+function applyAccountIdentity(
+  state: PersistedAppState,
+  user: NonNullable<ReturnType<typeof useAuthMock>['currentUser']>
+): PersistedAppState {
+  return {
+    ...state,
+    profile: {
+      ...state.profile,
+      id: user.id,
+      fullName: user.fullName,
+      university: user.university,
+      major: user.major,
+      yearLabel: user.yearLabel,
+      phone: user.phone,
+      email: user.email,
+      verifiedStudent: user.verifiedStudent,
+    },
+  };
+}
 
 function normalizeJobStatus(status: string): JobStatus {
   if (status === 'urgent' || status === 'expiring') {
@@ -119,23 +170,32 @@ function mergeSeedCatalog(
   };
 }
 
-function loadInitialState(): PersistedAppState {
+function loadInitialState(
+  user: ReturnType<typeof useAuthMock>['currentUser'] = null
+): PersistedAppState {
+  const seedState = createAccountSeedState(user);
   if (typeof window === 'undefined') {
-    return createSeedState();
+    return seedState;
   }
+
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const userStorageKey = user ? getUserStorageKey(user.id) : STORAGE_KEY;
+    const storedUserState = window.localStorage.getItem(userStorageKey);
+    const isLegacyDemoState = !storedUserState && user?.id === 'student-1';
+    const raw =
+      storedUserState ?? (isLegacyDemoState ? window.localStorage.getItem(STORAGE_KEY) : null);
     if (!raw) {
-      return createSeedState();
+      return seedState;
     }
     const parsed = JSON.parse(raw) as Partial<PersistedAppState>;
     if (isPersistedAppState(parsed)) {
-      return mergeSeedCatalog(parsed, createSeedState());
+      const mergedState = mergeSeedCatalog(parsed, seedState);
+      return user && isLegacyDemoState ? applyAccountIdentity(mergedState, user) : mergedState;
     }
   } catch {
     // Fallback to clean seed data if localStorage is corrupted.
   }
-  return createSeedState();
+  return seedState;
 }
 
 export interface CreatePostInput {
@@ -250,19 +310,26 @@ const PERIOD_TO_SHIFT: Record<
   },
 };
 
-export function AppStateProvider({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [state, setState] = useState<PersistedAppState>(loadInitialState);
+export function AppStateProvider({
+  children,
+  user = null,
+}: Readonly<{
+  children: React.ReactNode;
+  user?: ReturnType<typeof useAuthMock>['currentUser'];
+}>) {
+  const [state, setState] = useState<PersistedAppState>(() => loadInitialState(user));
+  const storageKey = user ? getUserStorageKey(user.id) : STORAGE_KEY;
   const [lastRealtimeSyncAt, setLastRealtimeSyncAt] = useState<string>(() =>
     new Date().toISOString()
   );
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      window.localStorage.setItem(storageKey, JSON.stringify(state));
     } catch {
       // Ignore quota errors in restricted browser environments.
     }
-  }, [state]);
+  }, [state, storageKey]);
 
   const dedupeResult = useMemo(() => deduplicateAndFilterJobs(state.rawJobs), [state.rawJobs]);
 
@@ -632,14 +699,14 @@ export function AppStateProvider({ children }: Readonly<{ children: React.ReactN
   }, []);
 
   const resetDemoData = useCallback(() => {
-    const fresh = createSeedState();
+    const fresh = createAccountSeedState(user);
     setState(fresh);
     notifications.show({
       title: 'Đã khôi phục dữ liệu mẫu',
       message: 'Toàn bộ bản đồ, hồ sơ, lịch rảnh và hội thoại đã về trạng thái ban đầu.',
       color: 'brand',
     });
-  }, []);
+  }, [user]);
 
   const value: AppStateContextValue = useMemo(
     () => ({
@@ -695,6 +762,16 @@ export function AppStateProvider({ children }: Readonly<{ children: React.ReactN
   );
 
   return <AppStateContext value={value}>{children}</AppStateContext>;
+}
+
+export function UserScopedAppStateProvider({ children }: Readonly<{ children: React.ReactNode }>) {
+  const { currentUser } = useAuthMock();
+
+  return (
+    <AppStateProvider key={currentUser?.id ?? 'guest'} user={currentUser}>
+      {children}
+    </AppStateProvider>
+  );
 }
 
 export function useAppState(): AppStateContextValue {
