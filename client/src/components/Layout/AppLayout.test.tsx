@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Text } from '@mantine/core';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
-import { AppStateProvider } from '../../state/AppStateContext';
+import { UserScopedAppStateProvider } from '../../state/AppStateContext';
 import { AuthMockProvider } from '../../state/AuthMockContext';
 import { AppLayout } from './AppLayout';
 
@@ -32,7 +32,7 @@ function renderLayout(initialEntry = '/') {
     <ModalsProvider>
       <Notifications />
       <AuthMockProvider>
-        <AppStateProvider>
+        <UserScopedAppStateProvider>
           <MemoryRouter initialEntries={[initialEntry]}>
             <Routes>
               <Route element={<AppLayout />}>
@@ -42,7 +42,7 @@ function renderLayout(initialEntry = '/') {
               </Route>
             </Routes>
           </MemoryRouter>
-        </AppStateProvider>
+        </UserScopedAppStateProvider>
       </AuthMockProvider>
     </ModalsProvider>
   );

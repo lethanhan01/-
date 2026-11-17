@@ -7,7 +7,7 @@ import { MantineProvider } from '@mantine/core';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
 import { Router } from './Router';
-import { AppStateProvider } from './state/AppStateContext';
+import { UserScopedAppStateProvider } from './state/AppStateContext';
 import { AuthMockProvider } from './state/AuthMockContext';
 import { cssVariablesResolver, theme } from './theme';
 import './styles/global.css';
@@ -18,9 +18,9 @@ export default function App() {
       <ModalsProvider>
         <Notifications position="top-right" />
         <AuthMockProvider>
-          <AppStateProvider>
+          <UserScopedAppStateProvider>
             <Router />
-          </AppStateProvider>
+          </UserScopedAppStateProvider>
         </AuthMockProvider>
       </ModalsProvider>
     </MantineProvider>
